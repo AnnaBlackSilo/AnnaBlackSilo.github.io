@@ -1,0 +1,41 @@
+Style guide
+
+Main colors to use:
+#42afa5
+#f6bc2e
+#d0dd2a
+#a1e6e9
+#f4797c
+#88bc1c
+#27843a
+#97107e
+#112f56
+
+Secondary colors to use in this order:
+#c1942a
+#717621
+#597c7e
+#bf6162
+#4b6419
+#285550
+#ce8fbb
+#b1d2b3
+#77819b
+#f9db95
+#a4ac26
+#f7aeac
+#bcd87f
+#ad4d95
+#60a266
+#60174f 
+#7a4141
+#6d951d
+#425375
+#856721
+#23622e
+#80b4b8
+
+For header use: Public Sans
+For text use: Inter
+
+Use Pattern Background - Black Silo.svg as a background for the visualization.

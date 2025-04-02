@@ -1,0 +1,218 @@
+{
+  "type": "line",
+  "data": {
+    "datasets": [
+      {
+        "label": "2SRW",
+        "borderColor": "#42afa5",
+        "backgroundColor": "#42afa5",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "US White",
+        "borderColor": "#f6bc2e",
+        "backgroundColor": "#f6bc2e",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "HRW 11",
+        "borderColor": "#d0dd2a",
+        "backgroundColor": "#d0dd2a",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "HRW 12",
+        "borderColor": "#a1e6e9",
+        "backgroundColor": "#a1e6e9",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "HRS 13.5",
+        "borderColor": "#f4797c",
+        "backgroundColor": "#f4797c",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "Argentine 12",
+        "borderColor": "#88bc1c",
+        "backgroundColor": "#88bc1c",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "APW",
+        "borderColor": "#27843a",
+        "backgroundColor": "#27843a",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "ASW",
+        "borderColor": "#97107e",
+        "backgroundColor": "#97107e",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "French 11.5",
+        "borderColor": "#112f56",
+        "backgroundColor": "#112f56",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "German 12.5",
+        "borderColor": "#c1942a",
+        "backgroundColor": "#c1942a",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      },
+      {
+        "label": "Black Sea Milling",
+        "borderColor": "#bf6162",
+        "backgroundColor": "#bf6162",
+        "fill": false,
+        "tension": 0.4,
+        "borderWidth": 2
+      }
+    ]
+  },
+  "options": {
+    "responsive": true,
+    "maintainAspectRatio": true,
+    "plugins": {
+      "zoom": {
+        "pan": {
+          "enabled": true,
+          "mode": "x",
+          "modifierKey": null,
+          "rangeMin": {
+            "x": null
+          },
+          "rangeMax": {
+            "x": null
+          }
+        },
+        "zoom": {
+          "wheel": {
+            "enabled": true,
+            "speed": 0.1
+          },
+          "pinch": {
+            "enabled": true
+          },
+          "mode": "x",
+          "drag": {
+            "enabled": false
+          }
+        },
+        "limits": {
+          "x": {
+            "minRange": 604800000,
+            "max": "auto",
+            "min": "auto"
+          }
+        }
+      },
+      "title": {
+        "display": true,
+        "text": "Wheat FOB Prices by Origin",
+        "font": {
+          "family": "Public Sans",
+          "size": 20
+        },
+        "color": "#112f56"
+      },
+      "legend": {
+        "display": true,
+        "position": "right",
+        "labels": {
+          "font": {
+            "family": "Inter",
+            "size": 12
+          },
+          "color": "#112f56"
+        },
+        "title": {
+          "display": true,
+          "text": "Wheat Origin",
+          "font": {
+            "family": "Public Sans",
+            "size": 14
+          },
+          "color": "#112f56"
+        }
+      },
+      "tooltip": {
+        "mode": "index",
+        "intersect": false,
+        "titleFont": {
+          "family": "Public Sans"
+        },
+        "bodyFont": {
+          "family": "Inter"
+        }
+      }
+    },
+    "scales": {
+      "x": {
+        "type": "time",
+        "time": {
+          "displayFormats": {
+            "day": "yyyy-MM-dd"
+          },
+          "tooltipFormat": "yyyy-MM-dd"
+        },
+        "title": {
+          "display": true,
+          "text": "Date",
+          "font": {
+            "family": "Inter",
+            "size": 14
+          },
+          "color": "#112f56"
+        },
+        "ticks": {
+          "font": {
+            "family": "Inter",
+            "size": 12
+          },
+          "color": "#112f56"
+        }
+      },
+      "y": {
+        "title": {
+          "display": true,
+          "text": "Price (US$/Mt)",
+          "font": {
+            "family": "Inter",
+            "size": 14
+          },
+          "color": "#112f56"
+        },
+        "ticks": {
+          "font": {
+            "family": "Inter",
+            "size": 12
+          },
+          "color": "#112f56"
+        }
+      }
+    }
+  }
+} 

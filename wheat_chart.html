@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wheat Prices Chart</title>
+    
+    <!-- Load fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Load Chart.js and plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    
+    <style>
+        .chart-wrapper {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+        }
+        .chart-container {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            margin: 0 auto;
+        }
+        canvas#wheatChart {
+            position: relative;
+            z-index: 1;
+        }
+        .controls {
+            text-align: center;
+            margin-top: 10px;
+            font-family: 'Inter', sans-serif;
+            color: #112f56;
+        }
+        .reset-zoom {
+            font-family: 'Inter', sans-serif;
+            padding: 8px 16px;
+            background-color: #42afa5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .reset-zoom:hover {
+            background-color: #3a9d94;
+        }
+        .zoom-info {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .time-range-controls {
+            position: absolute;
+            top: 45px;
+            left: 65px;
+            z-index: 2;
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 4px;
+        }
+        .time-range-btn {
+            font-family: 'Inter', sans-serif;
+            padding: 6px 12px;
+            background-color: white;
+            color: #112f56;
+            border: 1px solid #42afa5;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        .time-range-btn:hover {
+            background-color: #42afa5;
+            color: white;
+        }
+        .time-range-btn.active {
+            background-color: #42afa5;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-wrapper">
+        <div class="chart-container">
+            <div class="time-range-controls">
+                <button class="time-range-btn" data-days="14">2W</button>
+                <button class="time-range-btn" data-days="30">1M</button>
+                <button class="time-range-btn" data-days="90">3M</button>
+                <button class="time-range-btn" data-days="180">6M</button>
+                <button class="time-range-btn" data-days="365">1Y</button>
+                <button class="time-range-btn" data-days="730">2Y</button>
+            </div>
+            <canvas id="wheatChart"></canvas>
+        </div>
+        <div class="controls">
+            <div class="zoom-info">Use mouse wheel to zoom in/out</div>
+            <button class="reset-zoom">Reset View</button>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance;
+        
+        async function createChart() {
+            // Register the zoom plugin
+            Chart.register(ChartZoom);
+            
+            // Fetch the data
+            const response = await fetch('Wheat_Prices_JSON_Long.json');
+            const data = await response.json();
+            
+            // Get the chart configuration
+            const configResponse = await fetch('WHEAT_Chart_chartjs.json');
+            const config = await configResponse.json();
+            
+            // Process the data for Chart.js format
+            const processedData = processData(data);
+            config.data.datasets = config.data.datasets.map((dataset, index) => ({
+                ...dataset,
+                data: processedData[dataset.label] || [],
+                pointRadius: 0,  // Hide points
+                tension: 0.4,    // Make lines smooth
+                borderWidth: 2.5   // Slightly thicker lines for better visibility
+            }));
+
+            // Enhance legend configuration
+            config.options.plugins.legend = {
+                ...config.options.plugins.legend,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: ['Click on any origin', 'to show or hide'],
+                    font: {
+                        family: 'Public Sans',
+                        size: 12,
+                        weight: '600'
+                    },
+                    color: '#112f56',
+                    padding: { bottom: 10 }
+                },
+                labels: {
+                    font: {
+                        family: 'Inter',
+                        size: 12
+                    },
+                    color: '#112f56',
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    padding: 15,
+                    boxWidth: 6,
+                    boxHeight: 6,
+                    generateLabels: (chart) => {
+                        const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                        return originalLabels.map(label => ({
+                            ...label,
+                            text: `${label.hidden ? '☐' : '☑'} ${label.text}`
+                        }));
+                    }
+                }
+            };
+
+            // Add CSS for legend interactivity
+            const style = document.createElement('style');
+            style.textContent = `
+                .chartjs-legend-item {
+                    cursor: pointer !important;
+                    transition: all 0.2s ease;
+                    padding: 4px 8px !important;
+                    border-radius: 4px;
+                    display: flex !important;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .chartjs-legend-item:hover {
+                    background-color: rgba(66, 175, 165, 0.1);
+                }
+                .chartjs-legend-item[hidden] {
+                    opacity: 0.5;
+                }
+                .chartjs-legend-item[hidden] span:last-child {
+                    text-decoration: line-through;
+                }
+                .chartjs-legend-title {
+                    cursor: help;
+                    margin-bottom: 8px !important;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // Add tooltip to legend title
+            const addTooltipToTitle = () => {
+                const legendTitle = document.querySelector('.chartjs-legend-title');
+                if (legendTitle && !legendTitle.hasAttribute('data-tooltip-added')) {
+                    legendTitle.title = 'Click on any origin to show or hide';
+                    legendTitle.setAttribute('data-tooltip-added', 'true');
+                }
+            };
+
+            // Observer for legend title
+            const observer = new MutationObserver((mutations) => {
+                addTooltipToTitle();
+            });
+            
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            // Calculate min and max dates from data
+            let minDate = new Date();
+            let maxDate = new Date(0);
+            Object.values(processedData).forEach(dataset => {
+                dataset.forEach(point => {
+                    const date = new Date(point.x);
+                    if (date < minDate) minDate = date;
+                    if (date > maxDate) maxDate = date;
+                });
+            });
+
+            const today = new Date();
+            maxDate = today < maxDate ? today : maxDate;
+
+            // Set the x-axis scale limits
+            config.options.scales.x.min = minDate;
+            config.options.scales.x.max = maxDate;
+
+            // Set zoom and pan limits
+            config.options.plugins.zoom.pan.rangeMin.x = minDate;
+            config.options.plugins.zoom.pan.rangeMax.x = maxDate;
+            config.options.plugins.zoom.limits.x.min = minDate;
+            config.options.plugins.zoom.limits.x.max = maxDate;
+
+            // Configure zoom settings
+            config.options.plugins.zoom.zoom = {
+                wheel: {
+                    enabled: true,
+                    speed: 0.3,  // Increase zoom speed (default is 0.1)
+                    modifierKey: null
+                },
+                pinch: {
+                    enabled: true
+                },
+                mode: 'x'
+            };
+
+            // Add background pattern plugin
+            const patternImage = new Image();
+            patternImage.src = 'Pattern Background - Black Silo.svg';
+            
+            const backgroundPlugin = {
+                id: 'custom_canvas_background_image',
+                beforeDraw: (chart) => {
+                    if (patternImage.complete) {
+                        const ctx = chart.ctx;
+                        const {chartArea} = chart;
+                        
+                        // Save the current context state
+                        ctx.save();
+                        
+                        // Only draw within the chart area
+                        ctx.beginPath();
+                        ctx.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+                        ctx.clip();
+                        
+                        // Create pattern that will scale with zoom
+                        const pattern = ctx.createPattern(patternImage, 'repeat');
+                        ctx.fillStyle = pattern;
+                        ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+                        
+                        // Restore the context state
+                        ctx.restore();
+                    }
+                }
+            };
+
+            // Add vertical line plugin
+            const verticalLinePlugin = {
+                id: 'verticalLine',
+                beforeDraw: (chart) => {
+                    if (chart.tooltip._active && chart.tooltip._active.length) {
+                        const activePoint = chart.tooltip._active[0];
+                        const { ctx } = chart;
+                        const { x } = activePoint.element;
+                        const topY = chart.scales.y.top;
+                        const bottomY = chart.scales.y.bottom;
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.moveTo(x, topY);
+                        ctx.lineTo(x, bottomY);
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+            };
+
+            // Create the chart
+            const ctx = document.getElementById('wheatChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                ...config,
+                plugins: [backgroundPlugin, verticalLinePlugin],
+                options: {
+                    ...config.options,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+
+            // Add reset zoom button functionality
+            document.querySelector('.reset-zoom').addEventListener('click', () => {
+                chartInstance.resetZoom();
+                document.querySelectorAll('.time-range-btn').forEach(btn => btn.classList.remove('active'));
+            });
+
+            // Add time range buttons functionality
+            document.querySelectorAll('.time-range-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const days = parseInt(button.dataset.days);
+                    const now = new Date();
+                    const start = new Date(now);
+                    start.setDate(start.getDate() - days);
+                    
+                    // Remove active class from all buttons
+                    document.querySelectorAll('.time-range-btn').forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    chartInstance.zoomScale('x', {
+                        min: start.getTime(),
+                        max: now.getTime()
+                    });
+                });
+            });
+        }
+
+        function processData(data) {
+            const result = {};
+            const origins = ["2SRW", "US White", "HRW 11", "HRW 12", "HRS 13.5", 
+                           "Argentine 12", "APW", "ASW", "French 11.5", "German 12.5", 
+                           "Black Sea Milling"];
+            
+            origins.forEach(origin => {
+                result[origin] = data
+                    .filter(item => item.Origin === origin)
+                    .map(item => ({
+                        x: new Date(item.Date),
+                        y: item.Price
+                    }))
+                    .sort((a, b) => a.x - b.x);
+            });
+            
+            return result;
+        }
+
+        // Initialize the chart when the page loads
+        document.addEventListener('DOMContentLoaded', createChart);
+    </script>
+</body>
+</html> 
