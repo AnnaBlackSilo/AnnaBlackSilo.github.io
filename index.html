@@ -124,7 +124,11 @@
             config.data.datasets = config.data.datasets.map((dataset, index) => ({
                 ...dataset,
                 data: processedData[dataset.label] || [],
-                pointRadius: 0,  // Hide points
+                pointRadius: 0,  // Hide points by default
+                pointHoverRadius: 4,  // Size of point when hovering
+                pointBackgroundColor: dataset.borderColor,  // Match point color to line color
+                pointBorderColor: 'white',
+                pointBorderWidth: 1,
                 tension: 0.4,    // Make lines smooth
                 borderWidth: 2.5   // Slightly thicker lines for better visibility
             }));
@@ -319,6 +323,10 @@
                             mode: 'index',
                             intersect: false
                         }
+                    },
+                    hover: {
+                        mode: 'index',
+                        intersect: false
                     }
                 }
             });
