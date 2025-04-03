@@ -23,35 +23,109 @@
         }
         .chart-container {
             position: relative;
-            width: 800px;
-            height: 400px;
-            margin: 0 auto;
+            width: 100%;
+            height: 500px;
+            margin: 0;
+        }
+        .logo-container {
+            position: absolute;
+            bottom: 50px;
+            right: 140px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.0);
+            padding: 10px;
+            border-radius: 4px;
+            width: 144px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .logo-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .data-table-container {
+            margin-top: 20px;
+            overflow-x: auto;
+            width: 100%;
+        }
+        .date-selector {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Inter', sans-serif;
+            color: #112f56;
+        }
+        .date-selector label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .date-selector input {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            color: #112f56;
+            padding: 6px 12px;
+            border: 1px solid #42afa5;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .date-selector input::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            color: #112f56;
+        }
+        th, td {
+            padding: 8px;
+            text-align: right;
+            border: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #f5f5f5;
+            font-weight: 500;
+        }
+        tr:nth-child(3) {
+            background-color: rgba(66, 175, 165, 0.1);
+        }
+        td:first-child {
+            font-weight: 500;
+            text-align: left;
         }
         canvas#wheatChart {
             position: relative;
             z-index: 1;
         }
         .controls {
-            text-align: center;
-            margin-top: 10px;
+            text-align: left;
+            margin: 10px 0;
             font-family: 'Inter', sans-serif;
             color: #112f56;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .zoom-info {
+            font-style: italic;
+            font-size: 12px;
         }
         .reset-zoom {
             font-family: 'Inter', sans-serif;
-            padding: 8px 16px;
+            padding: 4px 12px;
             background-color: #42afa5;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 12px;
         }
         .reset-zoom:hover {
             background-color: #3a9d94;
-        }
-        .zoom-info {
-            margin-bottom: 8px;
-            font-size: 14px;
         }
         .time-range-controls {
             position: absolute;
@@ -83,6 +157,21 @@
             background-color: #42afa5;
             color: white;
         }
+        .date-picker {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            color: #112f56;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        .date-picker::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+        }
+        tr:nth-child(3) td:first-child {
+            padding: 0;
+        }
     </style>
 </head>
 <body>
@@ -96,16 +185,40 @@
                 <button class="time-range-btn" data-days="365">1Y</button>
                 <button class="time-range-btn" data-days="730">2Y</button>
             </div>
+            <div class="logo-container">
+                <img src="cropped-BS-Black.png" alt="Black Silo Logo">
+            </div>
             <canvas id="wheatChart"></canvas>
         </div>
         <div class="controls">
             <div class="zoom-info">Use mouse wheel to zoom in/out</div>
             <button class="reset-zoom">Reset View</button>
         </div>
+        <div class="data-table-container">
+            <div class="date-selector">
+                <label for="datePicker">Select Date:</label>
+                <input type="date" id="datePicker">
+            </div>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td></td></tr>
+                    <tr><td></td></tr>
+                    <tr><td></td></tr>
+                    <tr><td></td></tr>
+                    <tr><td></td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
         let chartInstance;
+        let allData = {};  // Store all data points
         
         async function createChart() {
             // Register the zoom plugin
@@ -114,10 +227,30 @@
             // Fetch the data
             const response = await fetch('Wheat_Prices_JSON_Long.json');
             const data = await response.json();
+            console.log('Loaded data points:', data.length);
             
             // Get the chart configuration
             const configResponse = await fetch('WHEAT_Chart_chartjs.json');
             const config = await configResponse.json();
+            
+            // Modify the config to ensure proper sizing
+            config.options = {
+                ...config.options,
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    ...config.options.plugins,
+                    legend: {
+                        ...config.options.plugins.legend,
+                        position: 'right',
+                        align: 'start'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            };
             
             // Process the data for Chart.js format
             const processedData = processData(data);
@@ -142,23 +275,24 @@
                     text: ['Click on any origin', 'to show or hide'],
                     font: {
                         family: 'Public Sans',
-                        size: 12,
+                        size: 14,
                         weight: '600'
                     },
                     color: '#112f56',
-                    padding: { bottom: 10 }
+                    padding: { top: 40,
+                        bottom: 15 }
                 },
                 labels: {
                     font: {
                         family: 'Inter',
-                        size: 12
+                        size: 13
                     },
                     color: '#112f56',
                     usePointStyle: true,
                     pointStyle: 'circle',
                     padding: 15,
-                    boxWidth: 6,
-                    boxHeight: 6,
+                    boxWidth: 10,
+                    boxHeight: 10,
                     generateLabels: (chart) => {
                         const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
                         return originalLabels.map(label => ({
@@ -264,25 +398,20 @@
                     const ctx = chart.ctx;
                     const {chartArea} = chart;
                     
-                    // Save the current context state
-                    ctx.save();
-                    
-                    // Only draw within the chart area
-                    ctx.beginPath();
-                    ctx.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
-                    ctx.clip();
-                    
-                    // Create pattern only if image is loaded successfully
+                    // Draw pattern background
                     if (patternImage.complete && patternImage.naturalWidth !== 0) {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+                        ctx.clip();
+                        
                         const pattern = ctx.createPattern(patternImage, 'repeat');
                         if (pattern) {
                             ctx.fillStyle = pattern;
                             ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
                         }
+                        ctx.restore();
                     }
-                    
-                    // Restore the context state
-                    ctx.restore();
                 }
             };
 
@@ -327,8 +456,35 @@
                     hover: {
                         mode: 'index',
                         intersect: false
+                    },
+                    onHover: (event, elements) => {
+                        if (elements && elements.length > 0) {
+                            const datasetIndex = elements[0].datasetIndex;
+                            const index = elements[0].index;
+                            const date = chartInstance.data.datasets[datasetIndex].data[index].x;
+                            updateDataTable(date);
+                        }
                     }
                 }
+            });
+
+            // Add mousemove event handler to update table
+            chartInstance.canvas.addEventListener('mousemove', (event) => {
+                const points = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
+                if (points.length) {
+                    const activePoint = points[0];
+                    const date = chartInstance.data.datasets[activePoint.datasetIndex].data[activePoint.index].x;
+                    updateDataTable(date);
+                }
+            });
+
+            // Clear table when mouse leaves chart
+            chartInstance.canvas.addEventListener('mouseout', () => {
+                const tbody = document.getElementById('dataTable').querySelector('tbody');
+                tbody.querySelectorAll('tr').forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach(cell => cell.textContent = '');
+                });
             });
 
             // Add reset zoom button functionality
@@ -356,6 +512,31 @@
                     });
                 });
             });
+
+            // Setup date picker
+            const datePicker = document.getElementById('datePicker');
+            const allDates = Object.keys(allData).sort();
+            datePicker.min = allDates[0];
+            datePicker.max = allDates[allDates.length - 1];
+            datePicker.value = allDates[Math.floor(allDates.length / 2)]; // Set to middle date
+            
+            datePicker.addEventListener('change', (e) => {
+                const selectedDate = new Date(e.target.value);
+                // Update chart view to center on selected date
+                const chart = Chart.getChart('wheatChart');
+                const currentMin = chart.scales.x.min;
+                const currentMax = chart.scales.x.max;
+                const range = currentMax - currentMin;
+                chart.zoomScale('x', {
+                    min: selectedDate.getTime() - range/2,
+                    max: selectedDate.getTime() + range/2
+                });
+                // Update table
+                updateDataTable(selectedDate);
+            });
+
+            // Initial table update
+            updateDataTable(new Date(datePicker.value));
         }
 
         function processData(data) {
@@ -363,6 +544,16 @@
             const origins = ["2SRW", "US White", "HRW 11", "HRW 12", "HRS 13.5", 
                            "Argentine 12", "APW", "ASW", "French 11.5", "German 12.5", 
                            "Black Sea Milling"];
+            
+            // Create a map of all dates and their data
+            allData = {};
+            data.forEach(item => {
+                const date = new Date(item.Date).toISOString().split('T')[0];
+                if (!allData[date]) {
+                    allData[date] = {};
+                }
+                allData[date][item.Origin] = item.Price;
+            });
             
             origins.forEach(origin => {
                 result[origin] = data
@@ -375,6 +566,78 @@
             });
             
             return result;
+        }
+
+        function updateDataTable(activeDate) {
+            console.log('Updating table for date:', activeDate);
+            const table = document.getElementById('dataTable');
+            const thead = table.querySelector('thead tr');
+            const tbody = table.querySelector('tbody');
+            const origins = ["2SRW", "US White", "HRW 11", "HRW 12", "HRS 13.5", 
+                           "Argentine 12", "APW", "ASW", "French 11.5", "German 12.5", 
+                           "Black Sea Milling"];
+            
+            // Set headers if not already set
+            if (thead.children.length === 1) {
+                console.log('Setting up headers');
+                origins.forEach(origin => {
+                    const th = document.createElement('th');
+                    th.textContent = origin;
+                    thead.appendChild(th);
+                });
+            }
+
+            // Get all dates and sort them
+            const allDates = Object.keys(allData).sort();
+            const activeDateStr = activeDate.toISOString().split('T')[0];
+            console.log('Active date:', activeDateStr);
+            console.log('Available dates:', allDates.length);
+            const activeIndex = allDates.indexOf(activeDateStr);
+            console.log('Active index:', activeIndex);
+            
+            if (activeIndex === -1) {
+                console.log('Date not found in data');
+                return;
+            }
+
+            // Get 2 dates before and 2 dates after
+            const startIndex = Math.max(0, activeIndex - 2);
+            const endIndex = Math.min(allDates.length - 1, activeIndex + 2);
+            const displayDates = allDates.slice(startIndex, endIndex + 1);
+            console.log('Display dates:', displayDates);
+
+            // Update table rows
+            for (let i = 0; i < 5; i++) {
+                const row = tbody.children[i];
+                // Clear existing cells
+                while (row.firstChild) {
+                    row.removeChild(row.firstChild);
+                }
+                
+                if (i < displayDates.length) {
+                    const date = displayDates[i];
+                    // Add date cell
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = date;
+                    row.appendChild(dateCell);
+                    
+                    // Add price cells
+                    origins.forEach(origin => {
+                        const td = document.createElement('td');
+                        const price = allData[date]?.[origin];
+                        td.textContent = price ? price.toFixed(2) : '-';
+                        row.appendChild(td);
+                    });
+                } else {
+                    // Fill empty row
+                    const dateCell = document.createElement('td');
+                    row.appendChild(dateCell);
+                    origins.forEach(() => {
+                        const td = document.createElement('td');
+                        row.appendChild(td);
+                    });
+                }
+            }
         }
 
         // Initialize the chart when the page loads
