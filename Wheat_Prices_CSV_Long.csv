@@ -146,7 +146,7 @@ Date,Origin,Price,Commodity,Location,Country,Continent,FOB_Price_Type,Currency/U
 2025-03-11,US White,245.275545,Wheat,PNW,USA,North America,Flat,US$/Mt
 2025-03-11,HRW 11,252.992079,Wheat,Gulf,USA,North America,Flat,US$/Mt
 2025-03-11,HRW 12,260.341159,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2025-03-11,HRS 13.5,202.123525,Wheat,Lakes,USA,North America,Flat,US$/Mt
+2025-03-11,HRS 13.5,247,Wheat,Lakes,USA,North America,Flat,US$/Mt
 2025-03-11,Argentine 12,241,Wheat,UpRiver,Argentina,South America,Flat,US$/Mt
 2025-03-11,APW,249.29504000000003,Wheat,WA,Australia,Australia,Flat,US$/Mt
 2025-03-11,ASW,244.29504000000003,Wheat,WA,Australia,Australia,Flat,US$/Mt
@@ -224,9 +224,9 @@ Date,Origin,Price,Commodity,Location,Country,Continent,FOB_Price_Type,Currency/U
 2025-03-01,HRW 11,249.133812,Wheat,Gulf,USA,North America,Flat,US$/Mt
 2025-03-01,HRW 12,256.482892,Wheat,Gulf,USA,North America,Flat,US$/Mt
 2025-03-01,HRS 13.5,241.8999875,Wheat,Lakes,USA,North America,Flat,US$/Mt
-2025-03-01,Argentine 12,10,Wheat,UpRiver,Argentina,South America,Flat,US$/Mt
-2025-03-01,APW,35.0,Wheat,WA,Australia,Australia,Flat,US$/Mt
-2025-03-01,ASW,30.0,Wheat,WA,Australia,Australia,Flat,US$/Mt
+2025-03-01,Argentine 12,232,Wheat,UpRiver,Argentina,South America,Flat,US$/Mt
+2025-03-01,APW,247.0,Wheat,WA,Australia,Australia,Flat,US$/Mt
+2025-03-01,ASW,243.0,Wheat,WA,Australia,Australia,Flat,US$/Mt
 2025-03-01,French 11.5,237.214,Wheat,Rouen,France,Europe,Flat,US$/Mt
 2025-03-01,German 12.5,241.7375,Wheat,Rostoc,Germany,Europe,Flat,US$/Mt
 2025-03-01,Black Sea Milling,252.0,Wheat,NTT,Russia,Europe,Flat,US$/Mt
@@ -1319,33 +1319,33 @@ Date,Origin,Price,Commodity,Location,Country,Continent,FOB_Price_Type,Currency/U
 2024-10-05,French 11.5,253.88816250000002,Wheat,Rouen,France,Europe,Flat,US$/Mt
 2024-10-05,German 12.5,255.45937500000002,Wheat,Rostoc,Germany,Europe,Flat,US$/Mt
 2024-10-05,Black Sea Milling,232.0,Wheat,NTT,Russia,Europe,Flat,US$/Mt
-2024-10-04,2SRW,45.93175,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-04,US White,31.23359,Wheat,PNW,USA,North America,Flat,US$/Mt
-2024-10-04,HRW 11,53.28083,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-04,HRW 12,60.62991,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-04,HRS 13.5,24.62925,Wheat,Lakes,USA,North America,Flat,US$/Mt
+2024-10-04,2SRW,260.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-04,US White,245.0,Wheat,PNW,USA,North America,Flat,US$/Mt
+2024-10-04,HRW 11,270.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-04,HRW 12,285.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-04,HRS 13.5,256,Wheat,Lakes,USA,North America,Flat,US$/Mt
 2024-10-04,Argentine 12,-,Wheat,UpRiver,Argentina,South America,Flat,US$/Mt
 2024-10-04,APW,265.1123,Wheat,WA,Australia,Australia,Flat,US$/Mt
 2024-10-04,ASW,260.1123,Wheat,WA,Australia,Australia,Flat,US$/Mt
 2024-10-04,French 11.5,257.773655,Wheat,Rouen,France,Europe,Flat,US$/Mt
 2024-10-04,German 12.5,259.3434375,Wheat,Rostoc,Germany,Europe,Flat,US$/Mt
 2024-10-04,Black Sea Milling,225.0,Wheat,NTT,Russia,Europe,Flat,US$/Mt
-2024-10-03,2SRW,45.93175,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-03,US White,31.23359,Wheat,PNW,USA,North America,Flat,US$/Mt
-2024-10-03,HRW 11,53.28083,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-03,HRW 12,60.62991,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-03,HRS 13.5,24.62925,Wheat,Lakes,USA,North America,Flat,US$/Mt
+2024-10-03,2SRW,260.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-03,US White,245.0,Wheat,PNW,USA,North America,Flat,US$/Mt
+2024-10-03,HRW 11,269.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-03,HRW 12,285.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-03,HRS 13.5,253,Wheat,Lakes,USA,North America,Flat,US$/Mt
 2024-10-03,Argentine 12,-,Wheat,UpRiver,Argentina,South America,Flat,US$/Mt
 2024-10-03,APW,265.1123,Wheat,WA,Australia,Australia,Flat,US$/Mt
 2024-10-03,ASW,260.1123,Wheat,WA,Australia,Australia,Flat,US$/Mt
 2024-10-03,French 11.5,257.773655,Wheat,Rouen,France,Europe,Flat,US$/Mt
 2024-10-03,German 12.5,259.3434375,Wheat,Rostoc,Germany,Europe,Flat,US$/Mt
 2024-10-03,Black Sea Milling,223.0,Wheat,NTT,Russia,Europe,Flat,US$/Mt
-2024-10-02,2SRW,45.93175,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-02,US White,31.23359,Wheat,PNW,USA,North America,Flat,US$/Mt
-2024-10-02,HRW 11,53.28083,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-02,HRW 12,60.62991,Wheat,Gulf,USA,North America,Flat,US$/Mt
-2024-10-02,HRS 13.5,24.62925,Wheat,Lakes,USA,North America,Flat,US$/Mt
+2024-10-02,2SRW,260.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-02,US White,245.0,Wheat,PNW,USA,North America,Flat,US$/Mt
+2024-10-02,HRW 11,267.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-02,HRW 12,285.0,Wheat,Gulf,USA,North America,Flat,US$/Mt
+2024-10-02,HRS 13.5,250,Wheat,Lakes,USA,North America,Flat,US$/Mt
 2024-10-02,Argentine 12,-,Wheat,UpRiver,Argentina,South America,Flat,US$/Mt
 2024-10-02,APW,265.1123,Wheat,WA,Australia,Australia,Flat,US$/Mt
 2024-10-02,ASW,260.1123,Wheat,WA,Australia,Australia,Flat,US$/Mt

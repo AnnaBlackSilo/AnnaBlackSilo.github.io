@@ -1,0 +1,104 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": {
+    "text": "Wheat Prices by Origin Over Time",
+    "font": "Public Sans",
+    "fontSize": 20,
+    "color": "#112f56"
+  },
+  "data": {"url": "Wheat_Prices_JSON.json"},
+  "width": 800,
+  "height": 400,
+  "background": "transparent",
+  "usermeta": {
+    "embedOptions": {
+      "actions": false,
+      "renderer": "svg",
+      "downloadFileName": "wheat-prices-chart"
+    }
+  },
+  "layer": [
+    {
+      "data": {
+        "values": [{"image": "Pattern Background - Black Silo.svg"}]
+      },
+      "mark": {
+        "type": "image",
+        "width": 800,
+        "height": 400,
+        "aspect": false
+      },
+      "encoding": {
+        "url": {"field": "image", "type": "nominal"}
+      }
+    },
+    {
+      "mark": {
+        "type": "line",
+        "point": false,
+        "strokeWidth": 2,
+        "interpolate": "monotone"
+      },
+      "encoding": {
+        "x": {
+          "field": "Date",
+          "type": "temporal",
+          "title": "Date",
+          "axis": {
+            "format": "%Y-%m-%d",
+            "labelFont": "Inter",
+            "titleFont": "Inter",
+            "labelColor": "#112f56",
+            "titleColor": "#112f56"
+          }
+        },
+        "y": {
+          "field": "Price",
+          "type": "quantitative",
+          "title": "Price (US$/Mt)",
+          "axis": {
+            "labelFont": "Inter",
+            "titleFont": "Inter",
+            "labelColor": "#112f56",
+            "titleColor": "#112f56"
+          }
+        },
+        "color": {
+          "field": "Origin",
+          "type": "nominal",
+          "title": "Wheat Origin",
+          "scale": {
+            "domain": ["2SRW", "US White", "HRW 11", "HRW 12", "HRS 13.5", "Argentine 12", "APW", "ASW", "French 11.5"],
+            "range": ["#42afa5", "#f6bc2e", "#d0dd2a", "#a1e6e9", "#f4797c", "#88bc1c", "#27843a", "#97107e", "#112f56"]
+          },
+          "legend": {
+            "labelFont": "Inter",
+            "titleFont": "Public Sans",
+            "labelColor": "#112f56",
+            "titleColor": "#112f56"
+          }
+        },
+        "tooltip": [
+          {"field": "Date", "type": "temporal", "title": "Date"},
+          {"field": "Origin", "type": "nominal", "title": "Origin"},
+          {"field": "Price", "type": "quantitative", "title": "Price"},
+          {"field": "Country", "type": "nominal", "title": "Country"},
+          {"field": "Location", "type": "nominal", "title": "Location"}
+        ]
+      }
+    }
+  ],
+  "config": {
+    "axis": {
+      "labelFontSize": 12,
+      "titleFontSize": 14
+    },
+    "legend": {
+      "labelFontSize": 12,
+      "titleFontSize": 14
+    },
+    "view": {
+      "stroke": null
+    }
+  }
+}
