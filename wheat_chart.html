@@ -185,9 +185,6 @@
                 <button class="time-range-btn" data-days="365">1Y</button>
                 <button class="time-range-btn" data-days="730">2Y</button>
             </div>
-            <div class="logo-container">
-                <img src="cropped-BS-Black.png" alt="Black Silo Logo">
-            </div>
             <canvas id="wheatChart"></canvas>
         </div>
         <div class="controls">
@@ -347,6 +344,18 @@
             
             observer.observe(document.body, { childList: true, subtree: true });
 
+            // Add throttle function for performance
+            function throttle(func, limit) {
+                let inThrottle;
+                return function(...args) {
+                    if (!inThrottle) {
+                        func.apply(this, args);
+                        inThrottle = true;
+                        setTimeout(() => inThrottle = false, limit);
+                    }
+                };
+            }
+
             // Calculate min and max dates from data
             let minDate = new Date();
             let maxDate = new Date(0);
@@ -366,30 +375,76 @@
             config.options.scales.x.max = maxDate;
 
             // Set zoom and pan limits
-            config.options.plugins.zoom.pan.rangeMin.x = minDate;
-            config.options.plugins.zoom.pan.rangeMax.x = maxDate;
-            config.options.plugins.zoom.limits.x.min = minDate;
-            config.options.plugins.zoom.limits.x.max = maxDate;
-
-            // Configure zoom settings
-            config.options.plugins.zoom.zoom = {
-                wheel: {
+            config.options.plugins.zoom = {
+                pan: {
                     enabled: true,
-                    speed: 0.3,  // Increase zoom speed (default is 0.1)
-                    modifierKey: null
+                    mode: 'x',
+                    threshold: 10,
+                    rangeMin: {
+                        x: minDate
+                    },
+                    rangeMax: {
+                        x: maxDate
+                    }
                 },
-                pinch: {
-                    enabled: true
+                limits: {
+                    x: {
+                        min: minDate,
+                        max: maxDate,
+                        minRange: 24 * 60 * 60 * 1000 // Minimum 1 day range
+                    }
                 },
-                mode: 'x'
+                zoom: {
+                    wheel: {
+                        enabled: true,
+                        speed: 0.15, // Reduced speed for smoother zooming
+                        modifierKey: null
+                    },
+                    pinch: {
+                        enabled: true
+                    },
+                    mode: 'x',
+                    onZoom: throttle(function(context) {
+                        // Throttled zoom handler
+                        const chart = context.chart;
+                        if (!chart.isZoomedOrPanned) {
+                            chart.isZoomedOrPanned = true;
+                        }
+                    }, 50) // Throttle to 50ms
+                }
             };
+
+            // Optimize rendering
+            config.options.animation = {
+                duration: 0 // Disable animations for better performance
+            };
+            
+            config.options.responsive = true;
+            config.options.maintainAspectRatio = false;
+            config.options.interaction = {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            };
+
+            // Add debounced update for smoother data table updates
+            const debouncedUpdateDataTable = throttle((date) => {
+                updateDataTable(date);
+            }, 100);
 
             // Add background pattern plugin
             const patternImage = new Image();
             patternImage.src = 'Pattern-Background-with-WHITE-Black-Silo.svg';
             
+            const logoImage = new Image();
+            logoImage.src = 'cropped-BS-Black.png';
+            
             patternImage.onerror = () => {
-                console.warn('Failed to load pattern background image');
+                console.error('Failed to load pattern background image');
+            };
+
+            logoImage.onerror = (e) => {
+                console.error('Failed to load logo image:', e);
             };
 
             const backgroundPlugin = {
@@ -410,6 +465,29 @@
                             ctx.fillStyle = pattern;
                             ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
                         }
+                        ctx.restore();
+                    }
+                }
+            };
+
+            const logoPlugin = {
+                id: 'logo_plugin',
+                afterDatasetsDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    const {chartArea} = chart;
+                    
+                    // Draw logo if loaded successfully
+                    if (logoImage.complete && logoImage.naturalWidth !== 0) {
+                        const logoWidth = 144; // Same size as before
+                        const logoHeight = (logoImage.height / logoImage.width) * logoWidth;
+                        const xAxisY = chart.scales.y.bottom;
+                        
+                        ctx.save();
+                        // Position logo above x-axis, relative to chart area
+                        const x = chartArea.right - logoWidth - 10; // Same position from right as before
+                        const y = xAxisY - logoHeight - 10; // 20px above x-axis
+                        
+                        ctx.drawImage(logoImage, x, y, logoWidth, logoHeight);
                         ctx.restore();
                     }
                 }
@@ -443,7 +521,7 @@
             
             chartInstance = new Chart(ctx, {
                 ...config,
-                plugins: [backgroundPlugin, crosshairPlugin],
+                plugins: [backgroundPlugin, crosshairPlugin, logoPlugin],
                 options: {
                     ...config.options,
                     plugins: {
@@ -462,21 +540,21 @@
                             const datasetIndex = elements[0].datasetIndex;
                             const index = elements[0].index;
                             const date = chartInstance.data.datasets[datasetIndex].data[index].x;
-                            updateDataTable(date);
+                            debouncedUpdateDataTable(date);
                         }
                     }
                 }
             });
 
             // Add mousemove event handler to update table
-            chartInstance.canvas.addEventListener('mousemove', (event) => {
+            chartInstance.canvas.addEventListener('mousemove', throttle((event) => {
                 const points = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
                 if (points.length) {
                     const activePoint = points[0];
                     const date = chartInstance.data.datasets[activePoint.datasetIndex].data[activePoint.index].x;
-                    updateDataTable(date);
+                    debouncedUpdateDataTable(date);
                 }
-            });
+            }, 50));
 
             // Clear table when mouse leaves chart
             chartInstance.canvas.addEventListener('mouseout', () => {
