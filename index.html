@@ -100,6 +100,10 @@
         canvas#wheatChart {
             position: relative;
             z-index: 1;
+            cursor: grab;
+        }
+        canvas#wheatChart:active {
+            cursor: grabbing;
         }
         .controls {
             text-align: left;
@@ -188,7 +192,7 @@
             <canvas id="wheatChart"></canvas>
         </div>
         <div class="controls">
-            <div class="zoom-info">Use mouse wheel to zoom in/out</div>
+            <div class="zoom-info">Click and drag to pan, use mouse wheel to zoom in/out</div>
             <button class="reset-zoom">Reset View</button>
         </div>
         <div class="data-table-container">
@@ -379,7 +383,9 @@
                 pan: {
                     enabled: true,
                     mode: 'x',
-                    threshold: 10,
+                    threshold: 5,
+                    modifierKey: null, // No modifier key required for panning
+                    speed: 10, // Increase pan speed
                     rangeMin: {
                         x: minDate
                     },
@@ -396,21 +402,16 @@
                 },
                 zoom: {
                     wheel: {
-                        enabled: true,
-                        speed: 0.15, // Reduced speed for smoother zooming
-                        modifierKey: null
+                        enabled: true, // Enable wheel zoom
+                        speed: 0.1 // Control zoom speed
+                    },
+                    drag: {
+                        enabled: false // Disable zoom by dragging
                     },
                     pinch: {
-                        enabled: true
+                        enabled: true // Enable pinch zoom for touch devices
                     },
-                    mode: 'x',
-                    onZoom: throttle(function(context) {
-                        // Throttled zoom handler
-                        const chart = context.chart;
-                        if (!chart.isZoomedOrPanned) {
-                            chart.isZoomedOrPanned = true;
-                        }
-                    }, 50) // Throttle to 50ms
+                    mode: 'x'
                 }
             };
 
@@ -546,6 +547,43 @@
                 }
             });
 
+            // Manually initialize Hammer.js for more reliable panning
+            const chartCanvas = document.getElementById('wheatChart');
+            const mc = new Hammer.Manager(chartCanvas);
+            const pan = new Hammer.Pan({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 5 });
+            mc.add(pan);
+            
+            let startX = 0;
+            let startMin = 0;
+            let startMax = 0;
+            
+            mc.on('panstart', function(e) {
+                startX = e.center.x;
+                startMin = chartInstance.scales.x.min;
+                startMax = chartInstance.scales.x.max;
+                chartCanvas.style.cursor = 'grabbing';
+            });
+            
+            mc.on('pan', function(e) {
+                // Calculate the time difference based on the drag distance
+                const chartArea = chartInstance.chartArea;
+                const pixelRange = chartArea.right - chartArea.left;
+                const timeRange = startMax - startMin;
+                const pixelsPerMs = pixelRange / timeRange;
+                
+                const deltaX = startX - e.center.x;
+                const deltaMs = deltaX / pixelsPerMs;
+                
+                // Update the chart scale
+                chartInstance.scales.x.options.min = startMin + deltaMs;
+                chartInstance.scales.x.options.max = startMax + deltaMs;
+                chartInstance.update();
+            });
+            
+            mc.on('panend', function() {
+                chartCanvas.style.cursor = 'grab';
+            });
+
             // Add mousemove event handler to update table
             chartInstance.canvas.addEventListener('mousemove', throttle((event) => {
                 const points = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
@@ -555,6 +593,66 @@
                     debouncedUpdateDataTable(date);
                 }
             }, 50));
+
+            // Add wheel event for zooming
+            chartCanvas.addEventListener('wheel', function(e) {
+                e.preventDefault(); // Prevent page scrolling
+                
+                const wheelDelta = e.deltaY;
+                const chart = chartInstance;
+                const chartArea = chart.chartArea;
+                
+                // Calculate the mouse position relative to the chart area
+                const rect = chartCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mousePosition = (mouseX - chartArea.left) / (chartArea.right - chartArea.left);
+                
+                // Calculate the current time range
+                const min = chart.scales.x.min;
+                const max = chart.scales.x.max;
+                const range = max - min;
+                
+                // Calculate zoom factor (smaller value = slower zoom)
+                const zoomFactor = 0.1;
+                const zoomAmount = wheelDelta > 0 ? (1 + zoomFactor) : (1 - zoomFactor);
+                
+                // Calculate new range and maintain the mouse position as the zoom center
+                const newRange = range * zoomAmount;
+                const centerPoint = min + range * mousePosition;
+                
+                // Calculate new min and max values, keeping the mouse position fixed
+                const newMin = centerPoint - newRange * mousePosition;
+                const newMax = centerPoint + newRange * (1 - mousePosition);
+                
+                // Apply minimum range constraint
+                const minRange = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+                if (newMax - newMin < minRange) {
+                    return;
+                }
+                
+                // Apply bounds constraints
+                let constrainedMin = Math.max(newMin, minDate.getTime());
+                let constrainedMax = Math.min(newMax, maxDate.getTime());
+                
+                if (constrainedMax - constrainedMin < minRange) {
+                    if (wheelDelta > 0) { // Zooming in
+                        // If zooming in too much, don't zoom further
+                        return;
+                    } else { // Zooming out
+                        // If at the edge, adjust to maintain minRange
+                        if (constrainedMin <= minDate.getTime()) {
+                            constrainedMax = constrainedMin + minRange;
+                        } else if (constrainedMax >= maxDate.getTime()) {
+                            constrainedMin = constrainedMax - minRange;
+                        }
+                    }
+                }
+                
+                // Update chart scale
+                chart.scales.x.options.min = constrainedMin;
+                chart.scales.x.options.max = constrainedMax;
+                chart.update();
+            }, { passive: false });
 
             // Clear table when mouse leaves chart
             chartInstance.canvas.addEventListener('mouseout', () => {
@@ -567,7 +665,11 @@
 
             // Add reset zoom button functionality
             document.querySelector('.reset-zoom').addEventListener('click', () => {
-                chartInstance.resetZoom();
+                // Reset to original min and max dates
+                chartInstance.scales.x.options.min = minDate;
+                chartInstance.scales.x.options.max = maxDate;
+                chartInstance.update();
+                chartInstance.isZoomedOrPanned = false;
                 document.querySelectorAll('.time-range-btn').forEach(btn => btn.classList.remove('active'));
             });
 
@@ -584,10 +686,10 @@
                     // Add active class to clicked button
                     button.classList.add('active');
                     
-                    chartInstance.zoomScale('x', {
-                        min: start.getTime(),
-                        max: now.getTime()
-                    });
+                    // Update chart scale directly
+                    chartInstance.scales.x.options.min = start.getTime();
+                    chartInstance.scales.x.options.max = now.getTime();
+                    chartInstance.update();
                 });
             });
 
@@ -605,10 +707,12 @@
                 const currentMin = chart.scales.x.min;
                 const currentMax = chart.scales.x.max;
                 const range = currentMax - currentMin;
-                chart.zoomScale('x', {
-                    min: selectedDate.getTime() - range/2,
-                    max: selectedDate.getTime() + range/2
-                });
+                
+                // Set new range centered on selected date
+                chart.scales.x.options.min = selectedDate.getTime() - range/2;
+                chart.scales.x.options.max = selectedDate.getTime() + range/2;
+                chart.update();
+                
                 // Update table
                 updateDataTable(selectedDate);
             });
