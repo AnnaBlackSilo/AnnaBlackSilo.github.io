@@ -176,6 +176,10 @@
         tr:nth-child(3) td:first-child {
             padding: 0;
         }
+        .no-data {
+            color: #999;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -247,7 +251,8 @@
                         align: 'start'
                     },
                     tooltip: {
-                        mode: 'index',
+                        mode: 'nearest',
+                        axis: 'x',
                         intersect: false
                     }
                 }
@@ -264,8 +269,22 @@
                 pointBorderColor: 'white',
                 pointBorderWidth: 1,
                 tension: 0.4,    // Make lines smooth
-                borderWidth: 2.5   // Slightly thicker lines for better visibility
+                borderWidth: 2.5,   // Slightly thicker lines for better visibility
+                spanGaps: true,     // Connect lines across missing data points
+                segment: {
+                    borderDash: ctx => getSegmentStyle(ctx, dataset.label)
+                }
             }));
+
+            // Function to determine if a segment should be dashed (for gaps in data)
+            function getSegmentStyle(ctx, datasetLabel) {
+                if (!ctx.p0.skip && !ctx.p1.skip) {
+                    // If both points exist, use a solid line
+                    return undefined;
+                }
+                // Otherwise use a dashed line to indicate missing data
+                return [6, 6];
+            }
 
             // Enhance legend configuration
             config.options.plugins.legend = {
@@ -505,6 +524,7 @@
                         const topY = chartArea.top;
                         const bottomY = chartArea.bottom;
 
+                        // Draw vertical crosshair line
                         ctx.save();
                         ctx.beginPath();
                         ctx.moveTo(x, topY);
@@ -512,6 +532,45 @@
                         ctx.lineWidth = 1;
                         ctx.strokeStyle = 'rgba(81, 87, 89, 0.6)';
                         ctx.stroke();
+                        
+                        // Draw slightly larger points for all active datasets at this x-position
+                        const pointRadius = 5;
+                        chart.data.datasets.forEach((dataset, i) => {
+                            if (dataset.hidden) return;
+                            
+                            // Find the data point at this x position
+                            const datasetMeta = chart.getDatasetMeta(i);
+                            if (!datasetMeta.hidden) {
+                                // Find the nearest point to the crosshair x position
+                                let nearestPointIndex = -1;
+                                let minDistance = Infinity;
+                                
+                                datasetMeta.data.forEach((element, index) => {
+                                    const distance = Math.abs(element.x - x);
+                                    if (distance < minDistance) {
+                                        minDistance = distance;
+                                        nearestPointIndex = index;
+                                    }
+                                });
+                                
+                                if (nearestPointIndex !== -1) {
+                                    const element = datasetMeta.data[nearestPointIndex];
+                                    const dataPoint = dataset.data[nearestPointIndex];
+                                    
+                                    // Only draw points for visible data (not null/undefined)
+                                    if (dataPoint.y !== null && dataPoint.y !== undefined) {
+                                        ctx.beginPath();
+                                        ctx.arc(element.x, element.y, pointRadius, 0, 2 * Math.PI);
+                                        ctx.fillStyle = dataset.borderColor;
+                                        ctx.fill();
+                                        ctx.strokeStyle = 'white';
+                                        ctx.lineWidth = 1.5;
+                                        ctx.stroke();
+                                    }
+                                }
+                            }
+                        });
+                        
                         ctx.restore();
                     }
                 }
@@ -528,16 +587,70 @@
                     plugins: {
                         ...config.options.plugins,
                         tooltip: {
-                            mode: 'index',
-                            intersect: false
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false,
+                            includeInvisible: false, // Don't include hidden datasets
+                            displayColors: true,
+                            filter: function() {
+                                // Show all items in tooltip
+                                return true;
+                            },
+                            itemSort: function(a, b) {
+                                // Sort items by dataset index for consistent order
+                                return a.datasetIndex - b.datasetIndex;
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.parsed.y === null || context.parsed.y === undefined) {
+                                        return context.dataset.label + ': No data';
+                                    }
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2);
+                                },
+                                title: function(tooltipItems) {
+                                    if (tooltipItems.length > 0) {
+                                        const item = tooltipItems[0];
+                                        const date = new Date(item.parsed.x);
+                                        return date.toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        });
+                                    }
+                                    return '';
+                                }
+                            },
+                            // Tooltip styling
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#112f56',
+                            bodyColor: '#112f56',
+                            titleFont: {
+                                family: 'Public Sans',
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: 'Inter',
+                                size: 12
+                            },
+                            padding: 12,
+                            borderColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 1
                         }
                     },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
                     hover: {
-                        mode: 'index',
+                        mode: 'nearest',
+                        axis: 'x',
                         intersect: false
                     },
                     onHover: (event, elements) => {
                         if (elements && elements.length > 0) {
+                            // Use the first active element to determine the date
                             const datasetIndex = elements[0].datasetIndex;
                             const index = elements[0].index;
                             const date = chartInstance.data.datasets[datasetIndex].data[index].x;
@@ -586,8 +699,20 @@
 
             // Add mousemove event handler to update table
             chartInstance.canvas.addEventListener('mousemove', throttle((event) => {
-                const points = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
+                // Use 'nearest' mode with 'x' axis to get the closest point along the x-axis
+                const points = chartInstance.getElementsAtEventForMode(
+                    event, 
+                    'nearest', 
+                    { 
+                        axis: 'x',
+                        intersect: false,
+                        includeInvisible: false
+                    }, 
+                    false // Don't use index mode, get nearest point in each dataset
+                );
+                
                 if (points.length) {
+                    // Just use the first point to get the date for the data table
                     const activePoint = points[0];
                     const date = chartInstance.data.datasets[activePoint.datasetIndex].data[activePoint.index].x;
                     debouncedUpdateDataTable(date);
@@ -734,17 +859,23 @@
                 if (!allData[date]) {
                     allData[date] = {};
                 }
-                allData[date][item.Origin] = item.Price;
+                // Ensure we only store valid numeric prices
+                if (item.Price !== null && item.Price !== undefined && !isNaN(item.Price)) {
+                    allData[date][item.Origin] = item.Price;
+                }
             });
             
             origins.forEach(origin => {
-                result[origin] = data
-                    .filter(item => item.Origin === origin)
+                // Get all data points for this origin
+                const originData = data
+                    .filter(item => item.Origin === origin && item.Price !== null && item.Price !== undefined && !isNaN(item.Price))
                     .map(item => ({
                         x: new Date(item.Date),
                         y: item.Price
                     }))
                     .sort((a, b) => a.x - b.x);
+                
+                result[origin] = originData;
             });
             
             return result;
@@ -807,7 +938,10 @@
                     origins.forEach(origin => {
                         const td = document.createElement('td');
                         const price = allData[date]?.[origin];
-                        td.textContent = price ? price.toFixed(2) : '-';
+                        td.textContent = price !== undefined && price !== null ? price.toFixed(2) : 'N/A';
+                        if (price === undefined || price === null) {
+                            td.classList.add('no-data');
+                        }
                         row.appendChild(td);
                     });
                 } else {
