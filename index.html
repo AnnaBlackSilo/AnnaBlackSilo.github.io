@@ -100,6 +100,10 @@
         canvas#wheatChart {
             position: relative;
             z-index: 1;
+            cursor: grab;
+        }
+        canvas#wheatChart:active {
+            cursor: grabbing;
         }
         .controls {
             text-align: left;
@@ -172,6 +176,10 @@
         tr:nth-child(3) td:first-child {
             padding: 0;
         }
+        .no-data {
+            color: #999;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -188,7 +196,7 @@
             <canvas id="wheatChart"></canvas>
         </div>
         <div class="controls">
-            <div class="zoom-info">Use mouse wheel to zoom in/out</div>
+            <div class="zoom-info">Click and drag to pan, use mouse wheel to zoom in/out</div>
             <button class="reset-zoom">Reset View</button>
         </div>
         <div class="data-table-container">
@@ -243,7 +251,8 @@
                         align: 'start'
                     },
                     tooltip: {
-                        mode: 'index',
+                        mode: 'nearest',
+                        axis: 'x',
                         intersect: false
                     }
                 }
@@ -260,8 +269,22 @@
                 pointBorderColor: 'white',
                 pointBorderWidth: 1,
                 tension: 0.4,    // Make lines smooth
-                borderWidth: 2.5   // Slightly thicker lines for better visibility
+                borderWidth: 2.5,   // Slightly thicker lines for better visibility
+                spanGaps: true,     // Connect lines across missing data points
+                segment: {
+                    borderDash: ctx => getSegmentStyle(ctx, dataset.label)
+                }
             }));
+
+            // Function to determine if a segment should be dashed (for gaps in data)
+            function getSegmentStyle(ctx, datasetLabel) {
+                if (!ctx.p0.skip && !ctx.p1.skip) {
+                    // If both points exist, use a solid line
+                    return undefined;
+                }
+                // Otherwise use a dashed line to indicate missing data
+                return [6, 6];
+            }
 
             // Enhance legend configuration
             config.options.plugins.legend = {
@@ -379,7 +402,9 @@
                 pan: {
                     enabled: true,
                     mode: 'x',
-                    threshold: 10,
+                    threshold: 5,
+                    modifierKey: null, // No modifier key required for panning
+                    speed: 10, // Increase pan speed
                     rangeMin: {
                         x: minDate
                     },
@@ -396,21 +421,16 @@
                 },
                 zoom: {
                     wheel: {
-                        enabled: true,
-                        speed: 0.15, // Reduced speed for smoother zooming
-                        modifierKey: null
+                        enabled: true, // Enable wheel zoom
+                        speed: 0.1 // Control zoom speed
+                    },
+                    drag: {
+                        enabled: false // Disable zoom by dragging
                     },
                     pinch: {
-                        enabled: true
+                        enabled: true // Enable pinch zoom for touch devices
                     },
-                    mode: 'x',
-                    onZoom: throttle(function(context) {
-                        // Throttled zoom handler
-                        const chart = context.chart;
-                        if (!chart.isZoomedOrPanned) {
-                            chart.isZoomedOrPanned = true;
-                        }
-                    }, 50) // Throttle to 50ms
+                    mode: 'x'
                 }
             };
 
@@ -504,6 +524,7 @@
                         const topY = chartArea.top;
                         const bottomY = chartArea.bottom;
 
+                        // Draw vertical crosshair line
                         ctx.save();
                         ctx.beginPath();
                         ctx.moveTo(x, topY);
@@ -511,6 +532,45 @@
                         ctx.lineWidth = 1;
                         ctx.strokeStyle = 'rgba(81, 87, 89, 0.6)';
                         ctx.stroke();
+                        
+                        // Draw slightly larger points for all active datasets at this x-position
+                        const pointRadius = 5;
+                        chart.data.datasets.forEach((dataset, i) => {
+                            if (dataset.hidden) return;
+                            
+                            // Find the data point at this x position
+                            const datasetMeta = chart.getDatasetMeta(i);
+                            if (!datasetMeta.hidden) {
+                                // Find the nearest point to the crosshair x position
+                                let nearestPointIndex = -1;
+                                let minDistance = Infinity;
+                                
+                                datasetMeta.data.forEach((element, index) => {
+                                    const distance = Math.abs(element.x - x);
+                                    if (distance < minDistance) {
+                                        minDistance = distance;
+                                        nearestPointIndex = index;
+                                    }
+                                });
+                                
+                                if (nearestPointIndex !== -1) {
+                                    const element = datasetMeta.data[nearestPointIndex];
+                                    const dataPoint = dataset.data[nearestPointIndex];
+                                    
+                                    // Only draw points for visible data (not null/undefined)
+                                    if (dataPoint.y !== null && dataPoint.y !== undefined) {
+                                        ctx.beginPath();
+                                        ctx.arc(element.x, element.y, pointRadius, 0, 2 * Math.PI);
+                                        ctx.fillStyle = dataset.borderColor;
+                                        ctx.fill();
+                                        ctx.strokeStyle = 'white';
+                                        ctx.lineWidth = 1.5;
+                                        ctx.stroke();
+                                    }
+                                }
+                            }
+                        });
+                        
                         ctx.restore();
                     }
                 }
@@ -527,16 +587,70 @@
                     plugins: {
                         ...config.options.plugins,
                         tooltip: {
-                            mode: 'index',
-                            intersect: false
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false,
+                            includeInvisible: false, // Don't include hidden datasets
+                            displayColors: true,
+                            filter: function() {
+                                // Show all items in tooltip
+                                return true;
+                            },
+                            itemSort: function(a, b) {
+                                // Sort items by dataset index for consistent order
+                                return a.datasetIndex - b.datasetIndex;
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.parsed.y === null || context.parsed.y === undefined) {
+                                        return context.dataset.label + ': No data';
+                                    }
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2);
+                                },
+                                title: function(tooltipItems) {
+                                    if (tooltipItems.length > 0) {
+                                        const item = tooltipItems[0];
+                                        const date = new Date(item.parsed.x);
+                                        return date.toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        });
+                                    }
+                                    return '';
+                                }
+                            },
+                            // Tooltip styling
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#112f56',
+                            bodyColor: '#112f56',
+                            titleFont: {
+                                family: 'Public Sans',
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: 'Inter',
+                                size: 12
+                            },
+                            padding: 12,
+                            borderColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 1
                         }
                     },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
                     hover: {
-                        mode: 'index',
+                        mode: 'nearest',
+                        axis: 'x',
                         intersect: false
                     },
                     onHover: (event, elements) => {
                         if (elements && elements.length > 0) {
+                            // Use the first active element to determine the date
                             const datasetIndex = elements[0].datasetIndex;
                             const index = elements[0].index;
                             const date = chartInstance.data.datasets[datasetIndex].data[index].x;
@@ -546,15 +660,124 @@
                 }
             });
 
+            // Manually initialize Hammer.js for more reliable panning
+            const chartCanvas = document.getElementById('wheatChart');
+            const mc = new Hammer.Manager(chartCanvas);
+            const pan = new Hammer.Pan({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 5 });
+            mc.add(pan);
+            
+            let startX = 0;
+            let startMin = 0;
+            let startMax = 0;
+            
+            mc.on('panstart', function(e) {
+                startX = e.center.x;
+                startMin = chartInstance.scales.x.min;
+                startMax = chartInstance.scales.x.max;
+                chartCanvas.style.cursor = 'grabbing';
+            });
+            
+            mc.on('pan', function(e) {
+                // Calculate the time difference based on the drag distance
+                const chartArea = chartInstance.chartArea;
+                const pixelRange = chartArea.right - chartArea.left;
+                const timeRange = startMax - startMin;
+                const pixelsPerMs = pixelRange / timeRange;
+                
+                const deltaX = startX - e.center.x;
+                const deltaMs = deltaX / pixelsPerMs;
+                
+                // Update the chart scale
+                chartInstance.scales.x.options.min = startMin + deltaMs;
+                chartInstance.scales.x.options.max = startMax + deltaMs;
+                chartInstance.update();
+            });
+            
+            mc.on('panend', function() {
+                chartCanvas.style.cursor = 'grab';
+            });
+
             // Add mousemove event handler to update table
             chartInstance.canvas.addEventListener('mousemove', throttle((event) => {
-                const points = chartInstance.getElementsAtEventForMode(event, 'index', { intersect: false }, true);
+                // Use 'nearest' mode with 'x' axis to get the closest point along the x-axis
+                const points = chartInstance.getElementsAtEventForMode(
+                    event, 
+                    'nearest', 
+                    { 
+                        axis: 'x',
+                        intersect: false,
+                        includeInvisible: false
+                    }, 
+                    false // Don't use index mode, get nearest point in each dataset
+                );
+                
                 if (points.length) {
+                    // Just use the first point to get the date for the data table
                     const activePoint = points[0];
                     const date = chartInstance.data.datasets[activePoint.datasetIndex].data[activePoint.index].x;
                     debouncedUpdateDataTable(date);
                 }
             }, 50));
+
+            // Add wheel event for zooming
+            chartCanvas.addEventListener('wheel', function(e) {
+                e.preventDefault(); // Prevent page scrolling
+                
+                const wheelDelta = e.deltaY;
+                const chart = chartInstance;
+                const chartArea = chart.chartArea;
+                
+                // Calculate the mouse position relative to the chart area
+                const rect = chartCanvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mousePosition = (mouseX - chartArea.left) / (chartArea.right - chartArea.left);
+                
+                // Calculate the current time range
+                const min = chart.scales.x.min;
+                const max = chart.scales.x.max;
+                const range = max - min;
+                
+                // Calculate zoom factor (smaller value = slower zoom)
+                const zoomFactor = 0.1;
+                const zoomAmount = wheelDelta > 0 ? (1 + zoomFactor) : (1 - zoomFactor);
+                
+                // Calculate new range and maintain the mouse position as the zoom center
+                const newRange = range * zoomAmount;
+                const centerPoint = min + range * mousePosition;
+                
+                // Calculate new min and max values, keeping the mouse position fixed
+                const newMin = centerPoint - newRange * mousePosition;
+                const newMax = centerPoint + newRange * (1 - mousePosition);
+                
+                // Apply minimum range constraint
+                const minRange = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+                if (newMax - newMin < minRange) {
+                    return;
+                }
+                
+                // Apply bounds constraints
+                let constrainedMin = Math.max(newMin, minDate.getTime());
+                let constrainedMax = Math.min(newMax, maxDate.getTime());
+                
+                if (constrainedMax - constrainedMin < minRange) {
+                    if (wheelDelta > 0) { // Zooming in
+                        // If zooming in too much, don't zoom further
+                        return;
+                    } else { // Zooming out
+                        // If at the edge, adjust to maintain minRange
+                        if (constrainedMin <= minDate.getTime()) {
+                            constrainedMax = constrainedMin + minRange;
+                        } else if (constrainedMax >= maxDate.getTime()) {
+                            constrainedMin = constrainedMax - minRange;
+                        }
+                    }
+                }
+                
+                // Update chart scale
+                chart.scales.x.options.min = constrainedMin;
+                chart.scales.x.options.max = constrainedMax;
+                chart.update();
+            }, { passive: false });
 
             // Clear table when mouse leaves chart
             chartInstance.canvas.addEventListener('mouseout', () => {
@@ -567,7 +790,11 @@
 
             // Add reset zoom button functionality
             document.querySelector('.reset-zoom').addEventListener('click', () => {
-                chartInstance.resetZoom();
+                // Reset to original min and max dates
+                chartInstance.scales.x.options.min = minDate;
+                chartInstance.scales.x.options.max = maxDate;
+                chartInstance.update();
+                chartInstance.isZoomedOrPanned = false;
                 document.querySelectorAll('.time-range-btn').forEach(btn => btn.classList.remove('active'));
             });
 
@@ -584,10 +811,10 @@
                     // Add active class to clicked button
                     button.classList.add('active');
                     
-                    chartInstance.zoomScale('x', {
-                        min: start.getTime(),
-                        max: now.getTime()
-                    });
+                    // Update chart scale directly
+                    chartInstance.scales.x.options.min = start.getTime();
+                    chartInstance.scales.x.options.max = now.getTime();
+                    chartInstance.update();
                 });
             });
 
@@ -605,10 +832,12 @@
                 const currentMin = chart.scales.x.min;
                 const currentMax = chart.scales.x.max;
                 const range = currentMax - currentMin;
-                chart.zoomScale('x', {
-                    min: selectedDate.getTime() - range/2,
-                    max: selectedDate.getTime() + range/2
-                });
+                
+                // Set new range centered on selected date
+                chart.scales.x.options.min = selectedDate.getTime() - range/2;
+                chart.scales.x.options.max = selectedDate.getTime() + range/2;
+                chart.update();
+                
                 // Update table
                 updateDataTable(selectedDate);
             });
@@ -630,17 +859,23 @@
                 if (!allData[date]) {
                     allData[date] = {};
                 }
-                allData[date][item.Origin] = item.Price;
+                // Ensure we only store valid numeric prices
+                if (item.Price !== null && item.Price !== undefined && !isNaN(item.Price)) {
+                    allData[date][item.Origin] = item.Price;
+                }
             });
             
             origins.forEach(origin => {
-                result[origin] = data
-                    .filter(item => item.Origin === origin)
+                // Get all data points for this origin
+                const originData = data
+                    .filter(item => item.Origin === origin && item.Price !== null && item.Price !== undefined && !isNaN(item.Price))
                     .map(item => ({
                         x: new Date(item.Date),
                         y: item.Price
                     }))
                     .sort((a, b) => a.x - b.x);
+                
+                result[origin] = originData;
             });
             
             return result;
@@ -703,7 +938,10 @@
                     origins.forEach(origin => {
                         const td = document.createElement('td');
                         const price = allData[date]?.[origin];
-                        td.textContent = price ? price.toFixed(2) : '-';
+                        td.textContent = price !== undefined && price !== null ? price.toFixed(2) : 'N/A';
+                        if (price === undefined || price === null) {
+                            td.classList.add('no-data');
+                        }
                         row.appendChild(td);
                     });
                 } else {
