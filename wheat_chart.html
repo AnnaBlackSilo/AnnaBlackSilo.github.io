@@ -296,25 +296,53 @@
             .time-range-controls {
                 position: static;
                 margin: 10px 0;
-                justify-content: center;
+                justify-content: flex-start;
                 flex-wrap: wrap;
                 background: none;
+                width: 60%;
+                float: left;
             }
             
-            /* Stack controls vertically */
+            /* Stack controls vertically and position lower */
             .controls {
                 flex-direction: column;
                 gap: 10px;
+                clear: both;
+                margin-top: 80px;
+                padding-top: 20px;
+                border-top: 1px solid rgba(0, 0, 0, 0.1);
             }
             
             /* Center legend and make it full width */
             .chartjs-legend-container {
                 position: static;
                 margin-top: 20px;
-                width: 100%;
+                width: auto;
+                max-width: 200px;
+                margin-left: auto;
                 display: flex;
                 flex-direction: column;
-                align-items: center;
+                align-items: flex-end;
+            }
+
+            /* Adjust legend controls for mobile */
+            .legend-controls {
+                position: static;
+                margin: 10px 0;
+                padding: 0;
+                width: auto;
+                float: right;
+                border: none;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .legend-control-btn {
+                width: auto;
+                white-space: nowrap;
+                font-size: 11px;
+                padding: 4px 8px;
             }
             
             /* Make date selector stack vertically */
