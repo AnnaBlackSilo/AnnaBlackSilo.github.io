@@ -165,6 +165,15 @@
             font-style: italic;
             font-size: 12px;
         }
+        .mobile-zoom-info {
+            display: none;
+            font-style: italic;
+            font-size: 12px;
+            color: #112f56;
+            text-align: center;
+            margin: 5px 0;
+            font-family: 'Inter', sans-serif;
+        }
         .reset-zoom {
             font-family: 'Inter', sans-serif;
             padding: 4px 12px;
@@ -292,6 +301,18 @@
                 height: 400px;  /* Smaller height on mobile */
             }
             
+            /* Show mobile zoom info and hide desktop one */
+            .zoom-info {
+                display: none;
+            }
+            .mobile-zoom-info {
+                display: block;
+                clear: both;
+                margin: 0;
+                padding-bottom: 15px;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            }
+            
             /* Move time range controls below chart */
             .time-range-controls {
                 position: static;
@@ -309,8 +330,12 @@
                 gap: 10px;
                 clear: both;
                 margin-top: 80px;
-                padding-top: 20px;
-                border-top: 1px solid rgba(0, 0, 0, 0.1);
+            }
+
+            /* Position mobile zoom info just above controls */
+            .controls .mobile-zoom-info {
+                order: -1;
+                margin-bottom: 15px;
             }
             
             /* Center legend and make it full width */
@@ -386,6 +411,7 @@
             <canvas id="wheatChart"></canvas>
         </div>
         <div class="controls">
+            <div class="mobile-zoom-info">Pinch with two fingers to zoom, drag to pan</div>
             <div class="controls-left">
                 <div class="zoom-info">Click and drag to pan, use mouse wheel to zoom in/out</div>
                 <button class="reset-zoom">Reset View</button>
@@ -610,8 +636,8 @@
                     enabled: true,
                     mode: 'x',
                     threshold: 5,
-                    modifierKey: null, // No modifier key required for panning
-                    speed: 10, // Increase pan speed
+                    modifierKey: null,
+                    speed: 10,
                     rangeMin: {
                         x: minDate
                     },
@@ -628,14 +654,13 @@
                 },
                 zoom: {
                     wheel: {
-                        enabled: true, // Enable wheel zoom
-                        speed: 0.1 // Control zoom speed
-                    },
-                    drag: {
-                        enabled: false // Disable zoom by dragging
+                        enabled: true,
+                        speed: 0.1
                     },
                     pinch: {
-                        enabled: true // Enable pinch zoom for touch devices
+                        enabled: true,
+                        speed: 0.1,  // Control pinch zoom speed
+                        threshold: 5  // Lower threshold for easier activation
                     },
                     mode: 'x'
                 }
