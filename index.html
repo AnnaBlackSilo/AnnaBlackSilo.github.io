@@ -49,6 +49,8 @@
             margin-top: 20px;
             overflow-x: auto;
             width: 100%;
+            position: relative;
+            z-index: 9999;
         }
         .date-selector {
             margin-bottom: 15px;
@@ -57,6 +59,8 @@
             gap: 10px;
             font-family: 'Inter', sans-serif;
             color: #112f56;
+            position: relative;
+            z-index: 9999;
         }
         .date-selector label {
             font-size: 14px;
@@ -70,9 +74,29 @@
             border: 1px solid #42afa5;
             border-radius: 4px;
             cursor: pointer;
+            z-index: 9999;
         }
         .date-selector input::-webkit-calendar-picker-indicator {
             cursor: pointer;
+        }
+        /* Force calendar to open downward */
+        .date-selector {
+            position: relative;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            position: relative;
+            z-index: 1;
+        }
+        input[type="date"]::-webkit-calendar-picker {
+            position: absolute;
+            top: 100%;
+            left: 0;
+        }
+        input[type="date"]::-webkit-inner-spin-button {
+            display: none;
+        }
+        input[type="date"]::-webkit-clear-button {
+            display: none;
         }
         table {
             width: 100%;
@@ -113,6 +137,29 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            justify-content: space-between;
+        }
+        .controls-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .last-updated {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            color: #112f56;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: -10px;
+        }
+        .last-updated-date {
+            font-weight: 500;
         }
         .zoom-info {
             font-style: italic;
@@ -180,6 +227,121 @@
             color: #999;
             font-style: italic;
         }
+        .chartjs-legend-item {
+            cursor: pointer !important;
+            transition: all 0.2s ease;
+            padding: 4px 8px !important;
+            border-radius: 4px;
+            display: flex !important;
+            align-items: center;
+            gap: 8px;
+        }
+        .chartjs-legend-item:hover {
+            background-color: rgba(66, 175, 165, 0.1);
+        }
+        .chartjs-legend-item[hidden] {
+            opacity: 0.5;
+        }
+        .chartjs-legend-item[hidden] span:last-child {
+            text-decoration: line-through;
+        }
+        .chartjs-legend-title {
+            cursor: help;
+            margin-bottom: 8px !important;
+        }
+        .chartjs-legend-container {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            padding: 15px;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        .legend-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 15px;
+            margin-top: 380px;
+            margin-right: 10px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            align-items: flex-end;
+            white-space: nowrap;
+            background: transparent;
+        }
+        .legend-control-btn {
+            font-family: 'Inter', sans-serif;
+            padding: 4px 12px;
+            background-color: white;
+            color: #112f56;
+            border: 1px solid #42afa5;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            width: 100px;
+            white-space: nowrap;
+            text-align: center;
+        }
+        .legend-control-btn:hover {
+            background-color: #42afa5;
+            color: white;
+        }
+        @media screen and (max-width: 768px) {
+            .chart-container {
+                height: 400px;  /* Smaller height on mobile */
+            }
+            
+            /* Move time range controls below chart */
+            .time-range-controls {
+                position: static;
+                margin: 10px 0;
+                justify-content: center;
+                flex-wrap: wrap;
+                background: none;
+            }
+            
+            /* Stack controls vertically */
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            /* Center legend and make it full width */
+            .chartjs-legend-container {
+                position: static;
+                margin-top: 20px;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            /* Make date selector stack vertically */
+            .date-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            /* Adjust table for mobile */
+            table {
+                font-size: 11px;
+            }
+            th, td {
+                padding: 6px 4px;
+            }
+        }
+        @media screen and (max-width: 480px) {
+            .chart-container {
+                height: 300px;
+            }
+            
+            /* Smaller buttons */
+            .time-range-btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -196,8 +358,16 @@
             <canvas id="wheatChart"></canvas>
         </div>
         <div class="controls">
-            <div class="zoom-info">Click and drag to pan, use mouse wheel to zoom in/out</div>
-            <button class="reset-zoom">Reset View</button>
+            <div class="controls-left">
+                <div class="zoom-info">Click and drag to pan, use mouse wheel to zoom in/out</div>
+                <button class="reset-zoom">Reset View</button>
+            </div>
+            <div class="controls-right">
+                <div class="last-updated">
+                    <span>Last updated:</span>
+                    <span class="last-updated-date">Loading...</span>
+                </div>
+            </div>
         </div>
         <div class="data-table-container">
             <div class="date-selector">
@@ -299,8 +469,7 @@
                         weight: '600'
                     },
                     color: '#112f56',
-                    padding: { top: 40,
-                        bottom: 15 }
+                    padding: { top: 40, bottom: 15 }
                 },
                 labels: {
                     font: {
@@ -320,7 +489,9 @@
                             text: `${label.hidden ? '☐' : '☑'} ${label.text}`
                         }));
                     }
-                }
+                },
+                onHover: null,
+                onLeave: null
             };
 
             // Add CSS for legend interactivity
@@ -392,6 +563,14 @@
 
             const today = new Date();
             maxDate = today < maxDate ? today : maxDate;
+
+            // Update last updated date
+            const lastUpdatedDate = new Date(maxDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            document.querySelector('.last-updated-date').textContent = lastUpdatedDate;
 
             // Set the x-axis scale limits
             config.options.scales.x.min = minDate;
@@ -576,85 +755,95 @@
                 }
             };
 
+            // Add custom legend plugin
+            const legendControlsPlugin = {
+                id: 'legendControls',
+                afterInit: (chart) => {
+                    // Create container for legend controls
+                    const controls = document.createElement('div');
+                    controls.className = 'legend-controls';
+                    controls.innerHTML = `
+                        <button class="legend-control-btn" id="selectAllLegend">Select All</button>
+                        <button class="legend-control-btn" id="unselectAllLegend">Unselect All</button>
+                    `;
+
+                    // Insert controls after the chart's canvas
+                    const chartContainer = chart.canvas.parentNode;
+                    const legendContainer = chartContainer.querySelector('.chartjs-legend-container');
+                    if (legendContainer) {
+                        legendContainer.appendChild(controls);
+                    } else {
+                        const newLegendContainer = document.createElement('div');
+                        newLegendContainer.className = 'chartjs-legend-container';
+                        newLegendContainer.style.position = 'absolute';
+                        newLegendContainer.style.right = '0';
+                        newLegendContainer.style.top = '0';
+                        newLegendContainer.style.padding = '10px';
+                        newLegendContainer.appendChild(controls);
+                        chartContainer.appendChild(newLegendContainer);
+                    }
+
+                    // Add event listeners
+                    document.getElementById('selectAllLegend').addEventListener('click', () => {
+                        chart.data.datasets.forEach(dataset => {
+                            dataset.hidden = false;
+                        });
+                        chart.update();
+                    });
+
+                    document.getElementById('unselectAllLegend').addEventListener('click', () => {
+                        chart.data.datasets.forEach(dataset => {
+                            dataset.hidden = true;
+                        });
+                        chart.update();
+                    });
+                }
+            };
+
             // Create the chart
             const ctx = document.getElementById('wheatChart').getContext('2d');
             
             chartInstance = new Chart(ctx, {
                 ...config,
-                plugins: [backgroundPlugin, crosshairPlugin, logoPlugin],
+                plugins: [backgroundPlugin, crosshairPlugin, logoPlugin, legendControlsPlugin],
                 options: {
                     ...config.options,
                     plugins: {
                         ...config.options.plugins,
-                        tooltip: {
-                            mode: 'nearest',
-                            axis: 'x',
-                            intersect: false,
-                            includeInvisible: false, // Don't include hidden datasets
-                            displayColors: true,
-                            filter: function() {
-                                // Show all items in tooltip
-                                return true;
-                            },
-                            itemSort: function(a, b) {
-                                // Sort items by dataset index for consistent order
-                                return a.datasetIndex - b.datasetIndex;
-                            },
-                            callbacks: {
-                                label: function(context) {
-                                    if (context.parsed.y === null || context.parsed.y === undefined) {
-                                        return context.dataset.label + ': No data';
-                                    }
-                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2);
+                        legend: {
+                            ...config.options.plugins.legend,
+                            position: 'right',
+                            align: 'start',
+                            title: {
+                                display: true,
+                                text: ['Click on any origin', 'to show or hide'],
+                                font: {
+                                    family: 'Public Sans',
+                                    size: 14,
+                                    weight: '600'
                                 },
-                                title: function(tooltipItems) {
-                                    if (tooltipItems.length > 0) {
-                                        const item = tooltipItems[0];
-                                        const date = new Date(item.parsed.x);
-                                        return date.toLocaleDateString('en-US', { 
-                                            year: 'numeric', 
-                                            month: 'short', 
-                                            day: 'numeric' 
-                                        });
-                                    }
-                                    return '';
+                                color: '#112f56',
+                                padding: { top: 40, bottom: 15 }
+                            },
+                            labels: {
+                                font: {
+                                    family: 'Inter',
+                                    size: 13
+                                },
+                                color: '#112f56',
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 15,
+                                boxWidth: 10,
+                                boxHeight: 10,
+                                generateLabels: (chart) => {
+                                    const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    return originalLabels.map(label => ({
+                                        ...label,
+                                        text: `${label.hidden ? '☐' : '☑'} ${label.text}`
+                                    }));
                                 }
-                            },
-                            // Tooltip styling
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            titleColor: '#112f56',
-                            bodyColor: '#112f56',
-                            titleFont: {
-                                family: 'Public Sans',
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            bodyFont: {
-                                family: 'Inter',
-                                size: 12
-                            },
-                            padding: 12,
-                            borderColor: 'rgba(0, 0, 0, 0.1)',
-                            borderWidth: 1
-                        }
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    },
-                    hover: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    },
-                    onHover: (event, elements) => {
-                        if (elements && elements.length > 0) {
-                            // Use the first active element to determine the date
-                            const datasetIndex = elements[0].datasetIndex;
-                            const index = elements[0].index;
-                            const date = chartInstance.data.datasets[datasetIndex].data[index].x;
-                            debouncedUpdateDataTable(date);
+                            }
                         }
                     }
                 }
