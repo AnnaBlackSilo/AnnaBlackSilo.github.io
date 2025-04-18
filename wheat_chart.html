@@ -26,6 +26,14 @@
             width: 100%;
             height: 500px;
             margin: 0;
+            display: flex;
+            overflow: hidden; /* Prevent expansion beyond bounds */
+        }
+        .chart-area {
+            flex: 1;
+            position: relative;
+            margin-right: 180px; /* Leave space for legend */
+            overflow: hidden; /* Prevent expansion beyond bounds */
         }
         .logo-container {
             position: absolute;
@@ -125,6 +133,8 @@
             position: relative;
             z-index: 1;
             cursor: grab;
+            width: 100% !important;
+            height: 100% !important;
         }
         canvas#wheatChart:active {
             cursor: grabbing;
@@ -164,6 +174,15 @@
         .zoom-info {
             font-style: italic;
             font-size: 12px;
+        }
+        .mobile-zoom-info {
+            display: none;
+            font-style: italic;
+            font-size: 12px;
+            color: #112f56;
+            text-align: center;
+            margin: 5px 0;
+            font-family: 'Inter', sans-serif;
         }
         .reset-zoom {
             font-family: 'Inter', sans-serif;
@@ -227,6 +246,28 @@
             color: #999;
             font-style: italic;
         }
+        .chartjs-legend-container {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            padding: 15px;
+            border-radius: 4px;
+            z-index: 20;
+            pointer-events: all;
+        }
+        .legend-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 15px;
+            margin-top: 380px;
+            margin-right: 10px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            align-items: flex-end;
+            white-space: nowrap;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+        }
         .chartjs-legend-item {
             cursor: pointer !important;
             transition: all 0.2s ease;
@@ -235,6 +276,7 @@
             display: flex !important;
             align-items: center;
             gap: 8px;
+            pointer-events: all;
         }
         .chartjs-legend-item:hover {
             background-color: rgba(66, 175, 165, 0.1);
@@ -248,26 +290,6 @@
         .chartjs-legend-title {
             cursor: help;
             margin-bottom: 8px !important;
-        }
-        .chartjs-legend-container {
-            position: absolute;
-            right: 10px;
-            top: 10px;
-            padding: 15px;
-            border-radius: 4px;
-            z-index: 10;
-        }
-        .legend-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 10px 15px;
-            margin-top: 380px;
-            margin-right: 10px;
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-            align-items: flex-end;
-            white-space: nowrap;
-            background: transparent;
         }
         .legend-control-btn {
             font-family: 'Inter', sans-serif;
@@ -289,18 +311,96 @@
         }
         @media screen and (max-width: 768px) {
             .chart-container {
-                height: 400px;  /* Smaller height on mobile */
+                height: auto;  /* Let it grow based on content */
+                flex-direction: column;
+                margin-bottom: 15px;
+                max-height: 550px; /* Limit maximum height */
+            }
+            
+            .chart-area {
+                margin-right: 0;
+                height: 350px;
+                max-height: 350px; /* Enforce maximum height */
+                min-height: 300px; /* Ensure minimum height */
+            }
+            
+            canvas#wheatChart {
+                max-height: 350px !important; /* Constrain canvas height */
+            }
+            
+            .custom-legend {
+                position: relative !important;
+                width: 100% !important;
+                padding: 10px !important;
+                margin-top: 10px;
+                height: auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+            }
+            
+            .custom-legend > div {
+                display: flex !important;
+                flex-direction: column !important;
+                max-height: none !important;
+                width: 100% !important;
+            }
+            
+            .custom-legend-title {
+                padding-top: 0 !important;
+                text-align: center !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .custom-legend ul {
+                margin-bottom: 15px !important;
+            }
+            
+            .custom-legend-controls {
+                margin-top: 5px !important;
+                margin-bottom: 5px !important;
+                padding-top: 10px !important;
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                gap: 10px !important;
+            }
+            
+            .custom-legend-controls button {
+                flex: 1 !important;
+                font-size: 11px !important;
+                padding: 6px 8px !important;
+            }
+            
+            /* Show mobile info and hide desktop zoom info */
+            .zoom-info {
+                display: none;
+            }
+            
+            .mobile-zoom-info {
+                display: block;
+                clear: both;
+                margin-top: 15px;
+                margin-bottom: 15px;
+                text-align: center;
             }
             
             /* Move time range controls below chart */
             .time-range-controls {
                 position: static;
                 margin: 10px 0;
-                justify-content: flex-start;
+                padding: 5px;
+                display: flex;
+                justify-content: center;
                 flex-wrap: wrap;
                 background: none;
-                width: 60%;
-                float: left;
+                width: 100%;
+                float: none;
+            }
+            
+            .time-range-controls button {
+                margin: 2px;
             }
             
             /* Stack controls vertically and position lower */
@@ -308,59 +408,46 @@
                 flex-direction: column;
                 gap: 10px;
                 clear: both;
-                margin-top: 80px;
-                padding-top: 20px;
-                border-top: 1px solid rgba(0, 0, 0, 0.1);
-            }
-            
-            /* Center legend and make it full width */
-            .chartjs-legend-container {
-                position: static;
                 margin-top: 20px;
-                width: auto;
-                max-width: 200px;
-                margin-left: auto;
-                display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-            }
-
-            /* Adjust legend controls for mobile */
-            .legend-controls {
-                position: static;
-                margin: 10px 0;
-                padding: 0;
-                width: auto;
-                float: right;
-                border: none;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-
-            .legend-control-btn {
-                width: auto;
-                white-space: nowrap;
-                font-size: 11px;
-                padding: 4px 8px;
             }
             
-            /* Make date selector stack vertically */
+            /* Position mobile zoom info just above controls */
+            .controls .mobile-zoom-info {
+                order: -1;
+                margin-bottom: 15px;
+            }
+            
+            /* Improve data table for mobile */
+            .data-table-container {
+                margin-top: 30px;
+                overflow-x: auto;
+            }
+            
+            /* Make date selector more mobile-friendly */
             .date-selector {
                 flex-direction: column;
                 align-items: stretch;
+                margin-bottom: 15px;
+            }
+            
+            .date-selector label {
+                margin-bottom: 5px;
             }
             
             /* Adjust table for mobile */
             table {
                 font-size: 11px;
+                width: 100%;
+                min-width: 600px; /* Ensure horizontal scrolling for small screens */
             }
+            
             th, td {
                 padding: 6px 4px;
             }
         }
+        
         @media screen and (max-width: 480px) {
-            .chart-container {
+            .chart-area {
                 height: 300px;
             }
             
@@ -369,23 +456,36 @@
                 padding: 4px 8px;
                 font-size: 11px;
             }
+            
+            /* Ensure legend items are readable */
+            .custom-legend-item {
+                padding: 6px 8px !important;
+            }
+            
+            /* Better spacing for the data table */
+            .data-table-container {
+                margin-top: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="chart-wrapper">
         <div class="chart-container">
-            <div class="time-range-controls">
-                <button class="time-range-btn" data-days="14">2W</button>
-                <button class="time-range-btn" data-days="30">1M</button>
-                <button class="time-range-btn" data-days="90">3M</button>
-                <button class="time-range-btn" data-days="180">6M</button>
-                <button class="time-range-btn" data-days="365">1Y</button>
-                <button class="time-range-btn" data-days="730">2Y</button>
+            <div class="chart-area">
+                <div class="time-range-controls">
+                    <button class="time-range-btn" data-days="14">2W</button>
+                    <button class="time-range-btn" data-days="30">1M</button>
+                    <button class="time-range-btn" data-days="90">3M</button>
+                    <button class="time-range-btn" data-days="180">6M</button>
+                    <button class="time-range-btn" data-days="365">1Y</button>
+                    <button class="time-range-btn" data-days="730">2Y</button>
+                </div>
+                <canvas id="wheatChart"></canvas>
             </div>
-            <canvas id="wheatChart"></canvas>
         </div>
         <div class="controls">
+            <div class="mobile-zoom-info">Note: Dynamic zooming is available on desktop/laptop. On mobile, you can drag to pan the chart.</div>
             <div class="controls-left">
                 <div class="zoom-info">Click and drag to pan, use mouse wheel to zoom in/out</div>
                 <button class="reset-zoom">Reset View</button>
@@ -453,7 +553,13 @@
                         axis: 'x',
                         intersect: false
                     }
-                }
+                },
+                layout: {
+                    padding: {
+                        bottom: 10
+                    }
+                },
+                aspectRatio: window.innerWidth < 768 ? 1.5 : 2
             };
             
             // Process the data for Chart.js format
@@ -610,8 +716,8 @@
                     enabled: true,
                     mode: 'x',
                     threshold: 5,
-                    modifierKey: null, // No modifier key required for panning
-                    speed: 10, // Increase pan speed
+                    modifierKey: null,
+                    speed: 10,
                     rangeMin: {
                         x: minDate
                     },
@@ -628,14 +734,13 @@
                 },
                 zoom: {
                     wheel: {
-                        enabled: true, // Enable wheel zoom
-                        speed: 0.1 // Control zoom speed
-                    },
-                    drag: {
-                        enabled: false // Disable zoom by dragging
+                        enabled: true,
+                        speed: 0.1
                     },
                     pinch: {
-                        enabled: true // Enable pinch zoom for touch devices
+                        enabled: true,
+                        speed: 0.1,  // Control pinch zoom speed
+                        threshold: 5  // Lower threshold for easier activation
                     },
                     mode: 'x'
                 }
@@ -783,100 +888,277 @@
                 }
             };
 
-            // Add custom legend plugin
-            const legendControlsPlugin = {
-                id: 'legendControls',
-                afterInit: (chart) => {
-                    // Create container for legend controls
-                    const controls = document.createElement('div');
-                    controls.className = 'legend-controls';
-                    controls.innerHTML = `
-                        <button class="legend-control-btn" id="selectAllLegend">Select All</button>
-                        <button class="legend-control-btn" id="unselectAllLegend">Unselect All</button>
-                    `;
-
-                    // Insert controls after the chart's canvas
-                    const chartContainer = chart.canvas.parentNode;
-                    const legendContainer = chartContainer.querySelector('.chartjs-legend-container');
-                    if (legendContainer) {
-                        legendContainer.appendChild(controls);
-                    } else {
-                        const newLegendContainer = document.createElement('div');
-                        newLegendContainer.className = 'chartjs-legend-container';
-                        newLegendContainer.style.position = 'absolute';
-                        newLegendContainer.style.right = '0';
-                        newLegendContainer.style.top = '0';
-                        newLegendContainer.style.padding = '10px';
-                        newLegendContainer.appendChild(controls);
-                        chartContainer.appendChild(newLegendContainer);
-                    }
-
-                    // Add event listeners
-                    document.getElementById('selectAllLegend').addEventListener('click', () => {
-                        chart.data.datasets.forEach(dataset => {
-                            dataset.hidden = false;
-                        });
-                        chart.update();
-                    });
-
-                    document.getElementById('unselectAllLegend').addEventListener('click', () => {
-                        chart.data.datasets.forEach(dataset => {
-                            dataset.hidden = true;
-                        });
-                        chart.update();
-                    });
-                }
-            };
-
             // Create the chart
             const ctx = document.getElementById('wheatChart').getContext('2d');
             
             chartInstance = new Chart(ctx, {
                 ...config,
-                plugins: [backgroundPlugin, crosshairPlugin, logoPlugin, legendControlsPlugin],
+                plugins: [backgroundPlugin, crosshairPlugin, logoPlugin],
                 options: {
                     ...config.options,
                     plugins: {
                         ...config.options.plugins,
                         legend: {
-                            ...config.options.plugins.legend,
-                            position: 'right',
-                            align: 'start',
-                            title: {
-                                display: true,
-                                text: ['Click on any origin', 'to show or hide'],
-                                font: {
-                                    family: 'Public Sans',
-                                    size: 14,
-                                    weight: '600'
-                                },
-                                color: '#112f56',
-                                padding: { top: 40, bottom: 15 }
-                            },
-                            labels: {
-                                font: {
-                                    family: 'Inter',
-                                    size: 13
-                                },
-                                color: '#112f56',
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                padding: 15,
-                                boxWidth: 10,
-                                boxHeight: 10,
-                                generateLabels: (chart) => {
-                                    const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                                    return originalLabels.map(label => ({
-                                        ...label,
-                                        text: `${label.hidden ? '☐' : '☑'} ${label.text}`
-                                    }));
-                                }
+                            display: false, // Disable built-in legend
+                        }
+                    },
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    onResize: (chart, size) => {
+                        // Force height constraint on mobile
+                        if (window.innerWidth <= 768) {
+                            const canvas = chart.canvas;
+                            const chartArea = document.querySelector('.chart-area');
+                            if (chartArea && canvas) {
+                                canvas.style.height = '350px';
+                                chartArea.style.height = '350px';
                             }
                         }
                     }
                 }
             });
-
+            
+            // Create custom legend
+            function createCustomLegend() {
+                const chartContainer = document.querySelector('.chart-container');
+                
+                // Create legend container
+                const legendContainer = document.createElement('div');
+                legendContainer.className = 'custom-legend';
+                legendContainer.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    bottom: 0;
+                    padding: 10px;
+                    z-index: 100;
+                    pointer-events: all;
+                    width: 160px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                `;
+                
+                // Create main content container
+                const mainContent = document.createElement('div');
+                mainContent.style.cssText = `
+                    flex: 1;
+                    overflow-y: auto;
+                    display: flex;
+                    flex-direction: column;
+                `;
+                
+                // Create legend title
+                const legendTitle = document.createElement('div');
+                legendTitle.className = 'custom-legend-title';
+                legendTitle.textContent = 'Click on any origin to show or hide';
+                legendTitle.style.cssText = `
+                    font-family: 'Public Sans', sans-serif;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #112f56;
+                    margin-bottom: 10px;
+                    text-align: center;
+                    padding-top: 30px;
+                    padding-bottom: 5px;
+                `;
+                mainContent.appendChild(legendTitle);
+                
+                // Create legend items
+                const legendList = document.createElement('ul');
+                legendList.style.cssText = `
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                    flex: 1;
+                    overflow-y: auto;
+                    max-height: 320px;
+                `;
+                
+                chartInstance.data.datasets.forEach((dataset, index) => {
+                    const item = document.createElement('li');
+                    item.className = 'custom-legend-item';
+                    item.dataset.index = index;
+                    item.style.cssText = `
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 5px 7px;
+                        margin-bottom: 2px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-family: 'Inter', sans-serif;
+                        font-size: 13px;
+                        color: #112f56;
+                        transition: all 0.2s ease;
+                    `;
+                    
+                    item.innerHTML = `
+                        <span style="
+                            display: inline-block;
+                            width: 12px;
+                            height: 12px;
+                            border-radius: 50%;
+                            background-color: ${dataset.borderColor};
+                            flex-shrink: 0;
+                        "></span>
+                        <span class="checkbox" style="font-size: 12px; flex-shrink: 0;">${dataset.hidden ? '☐' : '☑'}</span>
+                        <span style="overflow: hidden; text-overflow: ellipsis;">${dataset.label}</span>
+                    `;
+                    
+                    item.addEventListener('mouseover', () => {
+                        if (!dataset.hidden) {
+                            item.style.backgroundColor = 'rgba(66, 175, 165, 0.1)';
+                        }
+                    });
+                    
+                    item.addEventListener('mouseout', () => {
+                        item.style.backgroundColor = 'transparent';
+                    });
+                    
+                    item.addEventListener('click', () => {
+                        console.log('Custom legend item clicked:', dataset.label);
+                        
+                        // Toggle dataset visibility
+                        dataset.hidden = !dataset.hidden;
+                        
+                        // Update checkbox
+                        item.querySelector('.checkbox').textContent = dataset.hidden ? '☐' : '☑';
+                        
+                        if (dataset.hidden) {
+                            item.style.opacity = '0.5';
+                            item.style.backgroundColor = 'transparent';
+                        } else {
+                            item.style.opacity = '1';
+                        }
+                        
+                        // Update chart
+                        chartInstance.update();
+                    });
+                    
+                    if (dataset.hidden) {
+                        item.style.opacity = '0.5';
+                    }
+                    
+                    legendList.appendChild(item);
+                });
+                
+                mainContent.appendChild(legendList);
+                legendContainer.appendChild(mainContent);
+                
+                // Add controls
+                const controlsContainer = document.createElement('div');
+                controlsContainer.className = 'custom-legend-controls';
+                controlsContainer.style.cssText = `
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    margin-top: 10px;
+                    margin-bottom: 17px;
+                    padding-top: 10px;
+                    border-top: 1px solid rgba(0, 0, 0, 0.1);
+                    text-align: center;
+                `;
+                
+                const selectAllBtn = document.createElement('button');
+                selectAllBtn.textContent = 'Select All';
+                selectAllBtn.className = 'legend-control-btn';
+                selectAllBtn.style.cssText = `
+                    font-family: 'Inter', sans-serif;
+                    padding: 4px 8px;
+                    background-color: white;
+                    color: #112f56;
+                    border: 1px solid #42afa5;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    transition: all 0.2s ease;
+                    width: 100%;
+                    white-space: nowrap;
+                    text-align: center;
+                `;
+                
+                selectAllBtn.addEventListener('mouseover', () => {
+                    selectAllBtn.style.backgroundColor = '#42afa5';
+                    selectAllBtn.style.color = 'white';
+                });
+                
+                selectAllBtn.addEventListener('mouseout', () => {
+                    selectAllBtn.style.backgroundColor = 'white';
+                    selectAllBtn.style.color = '#112f56';
+                });
+                
+                selectAllBtn.addEventListener('click', () => {
+                    chartInstance.data.datasets.forEach(dataset => {
+                        dataset.hidden = false;
+                    });
+                    
+                    document.querySelectorAll('.custom-legend-item').forEach(item => {
+                        item.style.opacity = '1';
+                        item.querySelector('.checkbox').textContent = '☑';
+                    });
+                    
+                    chartInstance.update();
+                });
+                
+                const unselectAllBtn = document.createElement('button');
+                unselectAllBtn.textContent = 'Unselect All';
+                unselectAllBtn.className = 'legend-control-btn';
+                unselectAllBtn.style.cssText = `
+                    font-family: 'Inter', sans-serif;
+                    padding: 4px 8px;
+                    background-color: white;
+                    color: #112f56;
+                    border: 1px solid #42afa5;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 11px;
+                    transition: all 0.2s ease;
+                    width: 100%;
+                    white-space: nowrap;
+                    text-align: center;
+                `;
+                
+                unselectAllBtn.addEventListener('mouseover', () => {
+                    unselectAllBtn.style.backgroundColor = '#42afa5';
+                    unselectAllBtn.style.color = 'white';
+                });
+                
+                unselectAllBtn.addEventListener('mouseout', () => {
+                    unselectAllBtn.style.backgroundColor = 'white';
+                    unselectAllBtn.style.color = '#112f56';
+                });
+                
+                unselectAllBtn.addEventListener('click', () => {
+                    chartInstance.data.datasets.forEach(dataset => {
+                        dataset.hidden = true;
+                    });
+                    
+                    document.querySelectorAll('.custom-legend-item').forEach(item => {
+                        item.style.opacity = '0.5';
+                        item.querySelector('.checkbox').textContent = '☐';
+                    });
+                    
+                    chartInstance.update();
+                });
+                
+                controlsContainer.appendChild(selectAllBtn);
+                controlsContainer.appendChild(unselectAllBtn);
+                legendContainer.appendChild(controlsContainer);
+                
+                // Add to chart container
+                chartContainer.appendChild(legendContainer);
+                
+                // Remove old legend controls if they exist
+                const oldLegendControls = document.querySelector('.legend-controls');
+                if (oldLegendControls) {
+                    oldLegendControls.remove();
+                }
+            }
+            
+            // Call the function after chart is created
+            createCustomLegend();
+            
             // Manually initialize Hammer.js for more reliable panning
             const chartCanvas = document.getElementById('wheatChart');
             const mc = new Hammer.Manager(chartCanvas);
@@ -1040,7 +1322,11 @@
             const allDates = Object.keys(allData).sort();
             datePicker.min = allDates[0];
             datePicker.max = allDates[allDates.length - 1];
-            datePicker.value = allDates[Math.floor(allDates.length / 2)]; // Set to middle date
+            
+            // Set default date to two days before the last date
+            const lastDateIndex = allDates.length - 1;
+            const defaultDateIndex = Math.max(0, lastDateIndex - 2);
+            datePicker.value = allDates[defaultDateIndex];
             
             datePicker.addEventListener('change', (e) => {
                 const selectedDate = new Date(e.target.value);
@@ -1175,6 +1461,22 @@
 
         // Initialize the chart when the page loads
         document.addEventListener('DOMContentLoaded', createChart);
+
+        // Add window resize listener to maintain chart dimensions
+        window.addEventListener('resize', () => {
+            if (chartInstance) {
+                if (window.innerWidth <= 768) {
+                    const canvas = chartInstance.canvas;
+                    const chartArea = document.querySelector('.chart-area');
+                    if (chartArea && canvas) {
+                        // Set fixed height on mobile
+                        canvas.style.height = '350px';
+                        chartArea.style.height = '350px';
+                        chartInstance.resize();
+                    }
+                }
+            }
+        });
     </script>
 </body>
 </html> 
